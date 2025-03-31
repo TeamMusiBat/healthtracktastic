@@ -17,7 +17,7 @@ interface AttendeeFormProps {
 }
 
 const AttendeeForm: React.FC<AttendeeFormProps> = ({ onAddAttendee, checkDuplicate }) => {
-  const [newAttendee, setNewAttendee] = useState<Partial<Attendee>>({
+  const initialAttendeeState = {
     name: "",
     fatherHusbandName: "",
     age: 0,
@@ -26,8 +26,9 @@ const AttendeeForm: React.FC<AttendeeFormProps> = ({ onAddAttendee, checkDuplica
     contactNumber: "",
     remarks: "",
     belongsToSameUC: true,
-  });
+  };
   
+  const [newAttendee, setNewAttendee] = useState<Partial<Attendee>>({...initialAttendeeState});
   const [otherAddress, setOtherAddress] = useState<string>("");
   
   const handleAddAttendee = () => {
@@ -60,17 +61,8 @@ const AttendeeForm: React.FC<AttendeeFormProps> = ({ onAddAttendee, checkDuplica
     // Send to parent component
     onAddAttendee(attendeeToAdd);
     
-    // Reset form
-    setNewAttendee({
-      name: "",
-      fatherHusbandName: "",
-      age: 0,
-      gender: "male",
-      underFiveChildren: 0,
-      contactNumber: "",
-      remarks: "",
-      belongsToSameUC: true,
-    });
+    // Reset form - properly clear inputs
+    setNewAttendee({...initialAttendeeState});
     setOtherAddress("");
     
     toast.success("Attendee added");
@@ -85,6 +77,7 @@ const AttendeeForm: React.FC<AttendeeFormProps> = ({ onAddAttendee, checkDuplica
           <Label htmlFor="name">Name</Label>
           <CamelCaseInput
             id="name"
+            key={`name-${newAttendee.name}`}
             defaultValue={newAttendee.name}
             onValueChange={(value) => setNewAttendee({ ...newAttendee, name: value })}
             placeholder="Enter name"
@@ -95,6 +88,7 @@ const AttendeeForm: React.FC<AttendeeFormProps> = ({ onAddAttendee, checkDuplica
           <Label htmlFor="fatherHusbandName">Father/Husband Name</Label>
           <CamelCaseInput
             id="fatherHusbandName"
+            key={`father-${newAttendee.fatherHusbandName}`}
             defaultValue={newAttendee.fatherHusbandName}
             onValueChange={(value) => setNewAttendee({ ...newAttendee, fatherHusbandName: value })}
             placeholder="Enter father/husband name"
@@ -115,8 +109,8 @@ const AttendeeForm: React.FC<AttendeeFormProps> = ({ onAddAttendee, checkDuplica
         <div className="space-y-2">
           <Label htmlFor="gender">Gender</Label>
           <Select
+            value={newAttendee.gender}
             onValueChange={(value: "male" | "female" | "other") => setNewAttendee({ ...newAttendee, gender: value })}
-            defaultValue={newAttendee.gender}
           >
             <SelectTrigger id="gender">
               <SelectValue placeholder="Select gender" />

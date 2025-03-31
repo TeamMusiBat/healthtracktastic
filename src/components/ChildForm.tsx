@@ -17,7 +17,7 @@ interface ChildFormProps {
 }
 
 const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => {
-  const [newChild, setNewChild] = useState<Partial<ScreenedChild>>({
+  const initialChildState = {
     name: "",
     fatherName: "",
     age: 6, // Default to 6 months
@@ -28,8 +28,9 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
     remarks: "",
     status: "Normal", // Will be calculated based on MUAC
     belongsToSameUC: true,
-  });
+  };
   
+  const [newChild, setNewChild] = useState<Partial<ScreenedChild>>({...initialChildState});
   const [otherAddress, setOtherAddress] = useState<string>("");
   
   // Handle MUAC change and update status
@@ -80,19 +81,8 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
     // Send to parent component
     onAddChild(childToAdd);
     
-    // Reset form
-    setNewChild({
-      name: "",
-      fatherName: "",
-      age: 6,
-      muac: 12.5,
-      gender: "male",
-      vaccination: "0-Dose",
-      vaccineDue: false,
-      remarks: "",
-      status: "Normal",
-      belongsToSameUC: true,
-    });
+    // Reset form - properly clear all inputs
+    setNewChild({...initialChildState});
     setOtherAddress("");
     
     toast.success("Child added to screening");
@@ -114,6 +104,7 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
           <Label htmlFor="childName">Name</Label>
           <CamelCaseInput
             id="childName"
+            key={`child-name-${newChild.name}`}
             defaultValue={newChild.name}
             onValueChange={(value) => setNewChild({ ...newChild, name: value })}
             placeholder="Enter child name"
@@ -124,6 +115,7 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
           <Label htmlFor="fatherName">Father Name</Label>
           <CamelCaseInput
             id="fatherName"
+            key={`father-name-${newChild.fatherName}`}
             defaultValue={newChild.fatherName}
             onValueChange={(value) => setNewChild({ ...newChild, fatherName: value })}
             placeholder="Enter father name"
@@ -146,8 +138,8 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
         <div className="space-y-2">
           <Label htmlFor="gender">Gender</Label>
           <Select
+            value={newChild.gender}
             onValueChange={(value: "male" | "female" | "other") => setNewChild({ ...newChild, gender: value })}
-            defaultValue={newChild.gender}
           >
             <SelectTrigger id="gender">
               <SelectValue placeholder="Select gender" />
@@ -196,8 +188,8 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
         <div className="space-y-2">
           <Label htmlFor="vaccination">Vaccination Status</Label>
           <Select
+            value={newChild.vaccination}
             onValueChange={(value: VaccineStatus) => setNewChild({ ...newChild, vaccination: value })}
-            defaultValue={newChild.vaccination}
           >
             <SelectTrigger id="vaccination">
               <SelectValue placeholder="Select vaccination status" />
