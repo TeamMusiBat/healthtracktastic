@@ -16,25 +16,14 @@ export interface ChildData {
   fatherName: string;
   address?: string;
   dob?: string;
-  gender?: "male" | "female" | "other";
+  gender: "male" | "female" | "other"; // Changed from optional to required
   remarks?: string;
   belongsToSameUC?: boolean;
 }
 
 export interface ScreenedChild extends ChildData {
-  id: string;
-  name: string;
-  fatherName: string;
-  age: number;
-  muac: number;
-  gender: "male" | "female" | "other";
-  vaccination: VaccineStatus;
-  vaccineDue: boolean;
-  status: "SAM" | "MAM" | "Normal";
-  dob?: string;
-  address?: string;
-  remarks?: string;
-  belongsToSameUC?: boolean;
+  // No need to redefine properties since they are already in ChildData
+  // and gender is now required in ChildData
 }
 
 export interface Attendee {
@@ -74,18 +63,18 @@ export interface ChildScreening extends ScreeningData {
 export interface AwarenessSession extends ScreeningData {
   attendees: Attendee[];
   sessionNumber?: number;
+  children: ChildData[]; // Already in ScreeningData, but keeping for clarity
 }
 
 // Context type
 interface HealthDataContextValue {
   awarenessSessions: AwarenessSession[];
-  awarnessSessions: AwarenessSession[]; // Keep for backward compatibility
   childScreenings: ChildScreening[];
   activeUsers: { id: string; name: string; role: string; location?: { latitude: number; longitude: number } }[];
   addAwarenessSession: (session: Omit<AwarenessSession, 'id'>) => void;
   addChildScreening: (session: Omit<ChildScreening, 'id'>) => void;
-  updateAwarenessSession: (id: string, updatedSession: Omit<ScreeningData, 'id' | 'children'>) => void;
-  updateChildScreening: (id: string, updatedSession: Omit<ScreeningData, 'id' | 'children'>) => void;
+  updateAwarenessSession: (id: string, updatedSession: Omit<AwarenessSession, 'id' | 'children' | 'attendees'>) => void;
+  updateChildScreening: (id: string, updatedSession: Omit<ChildScreening, 'id' | 'children'>) => void;
   deleteAwarenessSession: (id: string) => void;
   deleteChildScreening: (id: string) => void;
   addChildToSession: (sessionId: string, child: Omit<ChildData, 'id'>, isAwarenessSession: boolean, address?: string) => void;
@@ -134,6 +123,7 @@ export const HealthDataProvider = ({ children }: { children: React.ReactNode }) 
       id: uuidv4(),
       ...session,
       attendees: session.attendees || [],
+      children: session.children || [],
     };
     setAwarenessSessions([...awarenessSessions, newSession]);
   };
@@ -149,7 +139,7 @@ export const HealthDataProvider = ({ children }: { children: React.ReactNode }) 
   };
 
   // Update an existing awareness session
-  const updateAwarenessSession = (id: string, updatedSession: Omit<ScreeningData, 'id' | 'children'>) => {
+  const updateAwarenessSession = (id: string, updatedSession: Omit<AwarenessSession, 'id' | 'children' | 'attendees'>) => {
     setAwarenessSessions(
       awarenessSessions.map((session) =>
         session.id === id ? { ...session, ...updatedSession } : session
@@ -158,7 +148,7 @@ export const HealthDataProvider = ({ children }: { children: React.ReactNode }) 
   };
 
   // Update an existing child screening session
-  const updateChildScreening = (id: string, updatedSession: Omit<ScreeningData, 'id' | 'children'>) => {
+  const updateChildScreening = (id: string, updatedSession: Omit<ChildScreening, 'id' | 'children'>) => {
     setChildScreenings(
       childScreenings.map((session) =>
         session.id === id ? { ...session, ...updatedSession } : session
@@ -193,7 +183,7 @@ export const HealthDataProvider = ({ children }: { children: React.ReactNode }) 
     } else {
       setChildScreenings(
         childScreenings.map((session) =>
-          session.id === sessionId ? { ...session, children: [...session.children, newChild] } : session
+          session.id === sessionId ? { ...session, children: [...session.children, newChild as ScreenedChild] } : session
         )
       );
     }
@@ -222,7 +212,7 @@ export const HealthDataProvider = ({ children }: { children: React.ReactNode }) 
             return {
               ...session,
               children: session.children.map((child) =>
-                child.id === childId ? updatedChild : child
+                child.id === childId ? updatedChild as ScreenedChild : child
               ),
             };
           }
@@ -309,7 +299,6 @@ export const HealthDataProvider = ({ children }: { children: React.ReactNode }) 
 
   const value: HealthDataContextValue = {
     awarenessSessions,
-    awarnessSessions: awarenessSessions, // Add this for backward compatibility
     childScreenings,
     activeUsers,
     addAwarenessSession,

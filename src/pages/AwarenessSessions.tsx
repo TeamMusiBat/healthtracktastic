@@ -50,6 +50,7 @@ const AwarenessSessions = () => {
     userDesignation: user?.role || "",
     sessionNumber: 1,
     attendees: [],
+    children: [], // Added children array
     images: [],
   });
   
@@ -139,6 +140,7 @@ const AwarenessSessions = () => {
       userName: newSession.userName || user?.name || "",
       userDesignation: newSession.userDesignation || user?.role || "",
       location: newSession.location,
+      children: [], // Empty children array
       attendees: pendingAttendees as Attendee[],
       createdBy: user?.username || "",
       sessionNumber: newSession.sessionNumber || 1,
@@ -154,6 +156,7 @@ const AwarenessSessions = () => {
       userDesignation: user?.role || "",
       sessionNumber: 1,
       attendees: [],
+      children: [],
       images: [],
     });
     setPendingAttendees([]);
