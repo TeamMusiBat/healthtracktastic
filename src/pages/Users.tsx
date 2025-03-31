@@ -27,40 +27,19 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Plus, Search, Trash2, Eye, EyeOff, UserCircle } from "lucide-react";
+import { Plus, Search, Trash2, Eye, EyeOff, UserCircle, MapPin } from "lucide-react";
 import { useAuth, User, UserRole } from "@/contexts/AuthContext";
 import CamelCaseInput from "@/components/CamelCaseInput";
 
-// Mock users for demo purposes
+// Mock users with only developer user
 const MOCK_USERS: User[] = [
   {
     id: "1",
     username: "asifjamali83",
-    name: "Super Admin",
+    name: "Asif Jamali",
     role: "developer",
     isOnline: true,
-  },
-  {
-    id: "2",
-    username: "master",
-    name: "Master User",
-    role: "master",
-    isOnline: true,
-  },
-  {
-    id: "3",
-    username: "fmt1",
-    name: "FMT Worker 1",
-    role: "fmt",
-    isOnline: false,
-  },
-  {
-    id: "4",
-    username: "social1",
-    name: "Social Mobilizer 1",
-    role: "socialMobilizer",
-    isOnline: false,
-  },
+  }
 ];
 
 const Users = () => {
@@ -74,6 +53,8 @@ const Users = () => {
     username: "",
     name: "",
     password: "",
+    email: "",
+    phoneNumber: "",
     role: "" as UserRole,
   });
   
@@ -92,7 +73,7 @@ const Users = () => {
   const handleAddUser = () => {
     // Validate form
     if (!newUser.username || !newUser.name || !newUser.password || !newUser.role) {
-      toast.error("Please fill all the fields");
+      toast.error("Please fill all required fields");
       return;
     }
     
@@ -107,6 +88,8 @@ const Users = () => {
       id: (users.length + 1).toString(),
       username: newUser.username,
       name: newUser.name,
+      email: newUser.email || undefined,
+      phoneNumber: newUser.phoneNumber || undefined,
       role: newUser.role,
       isOnline: false,
     };
@@ -118,6 +101,8 @@ const Users = () => {
       username: "",
       name: "",
       password: "",
+      email: "",
+      phoneNumber: "",
       role: "" as UserRole,
     });
     
@@ -131,10 +116,13 @@ const Users = () => {
       return;
     }
     
-    // Prevent masters from deleting developers
-    if (user?.role === "master" && users.find((u) => u.id === userId)?.role === "developer") {
-      toast.error("You don't have permission to delete this user");
-      return;
+    // Developer can delete any user, master can only delete fmt/sm users
+    if (user?.role === "master") {
+      const userToDelete = users.find((u) => u.id === userId);
+      if (userToDelete && (userToDelete.role === "developer" || userToDelete.role === "master")) {
+        toast.error("You don't have permission to delete this user");
+        return;
+      }
     }
     
     // Delete user
@@ -144,6 +132,13 @@ const Users = () => {
   
   const toggleShowPassword = () => {
     setShowPassword(!showPassword);
+  };
+  
+  const getLocationLink = (user: User) => {
+    if (user.location) {
+      return `https://www.google.com/maps?q=${user.location.latitude},${user.location.longitude}`;
+    }
+    return "#";
   };
   
   return (
@@ -188,6 +183,27 @@ const Users = () => {
               </div>
               
               <div className="grid gap-2">
+                <Label htmlFor="email">Email (optional)</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                  placeholder="Enter email address"
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="phoneNumber">Phone Number (optional)</Label>
+                <Input
+                  id="phoneNumber"
+                  value={newUser.phoneNumber}
+                  onChange={(e) => setNewUser({ ...newUser, phoneNumber: e.target.value })}
+                  placeholder="Enter phone number"
+                />
+              </div>
+              
+              <div className="grid gap-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
                   <Input
@@ -222,7 +238,9 @@ const Users = () => {
                     {user?.role === "developer" && (
                       <SelectItem value="developer">Developer (Full Access)</SelectItem>
                     )}
-                    <SelectItem value="master">Master (User Management)</SelectItem>
+                    {(user?.role === "developer" || user?.role === "master") && (
+                      <SelectItem value="master">Master (User Management)</SelectItem>
+                    )}
                     <SelectItem value="fmt">FMT (Field Worker)</SelectItem>
                     <SelectItem value="socialMobilizer">Social Mobilizer</SelectItem>
                   </SelectContent>
@@ -262,7 +280,7 @@ const Users = () => {
                   </div>
                 </div>
                 <div className="flex items-center">
-                  {u.id !== user?.id && (user?.role === "developer" || (user?.role === "master" && u.role !== "developer")) && (
+                  {(user?.role === "developer" || (user?.role === "master" && (u.role === "fmt" || u.role === "socialMobilizer"))) && u.id !== user?.id && (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -285,6 +303,20 @@ const Users = () => {
                   {u.role === "socialMobilizer" && "Social Mobilizer"}
                 </div>
                 
+                {u.email && (
+                  <>
+                    <div className="text-gray-500">Email</div>
+                    <div className="font-medium">{u.email}</div>
+                  </>
+                )}
+                
+                {u.phoneNumber && (
+                  <>
+                    <div className="text-gray-500">Phone</div>
+                    <div className="font-medium">{u.phoneNumber}</div>
+                  </>
+                )}
+                
                 <div className="text-gray-500">Status</div>
                 <div className="flex items-center">
                   <span
@@ -294,6 +326,20 @@ const Users = () => {
                   ></span>
                   <span>{u.isOnline ? "Online" : "Offline"}</span>
                 </div>
+                
+                {u.isOnline && u.location && (
+                  <div className="col-span-2 mt-2">
+                    <a 
+                      href={getLocationLink(u)} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-500 hover:text-blue-700 flex items-center gap-1 text-sm"
+                    >
+                      <MapPin size={14} />
+                      <span>Track Location</span>
+                    </a>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

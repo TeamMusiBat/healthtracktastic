@@ -10,6 +10,8 @@ export interface User {
   username: string;
   name: string;
   role: UserRole;
+  email?: string;
+  phoneNumber?: string;
   isOnline?: boolean;
   lastActive?: Date;
   location?: {
@@ -30,7 +32,7 @@ interface AuthContextType {
 const DEVELOPER_USER: User = {
   id: "1",
   username: "asifjamali83",
-  name: "Super Admin",
+  name: "Asif Jamali",
   role: "developer",
   isOnline: true,
 };

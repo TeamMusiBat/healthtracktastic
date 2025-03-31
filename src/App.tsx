@@ -78,11 +78,8 @@ const AppContent = () => {
             <ChildScreening />
           </ProtectedRoute>
         } />
-        <Route path="/blogs" element={
-          <ProtectedRoute>
-            <Blogs />
-          </ProtectedRoute>
-        } />
+        {/* Blogs page is now publicly accessible */}
+        <Route path="/blogs" element={<Blogs />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Layout>

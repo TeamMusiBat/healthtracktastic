@@ -9,7 +9,7 @@ const BLOGS = [
     id: 1,
     title: "Understanding Child Nutrition",
     summary: "Learn about the importance of proper nutrition for children under five years old and how it affects their growth and development.",
-    author: "Dr. Sarah Ahmed",
+    author: "Asif Jamali",
     date: "May 15, 2023",
     category: "Nutrition",
     content: `
@@ -31,7 +31,7 @@ const BLOGS = [
     id: 2,
     title: "Importance of Childhood Vaccinations",
     summary: "Discover why vaccinations are essential for children's health and how they protect against serious diseases.",
-    author: "Dr. Imran Khan",
+    author: "Asif Jamali",
     date: "June 2, 2023",
     category: "Immunization",
     content: `
@@ -52,7 +52,7 @@ const BLOGS = [
     id: 3,
     title: "Promoting Hygiene Awareness in Communities",
     summary: "Learn effective strategies for promoting hygiene practices in rural and urban communities.",
-    author: "Fatima Zahra",
+    author: "Asif Jamali",
     date: "July 10, 2023",
     category: "Hygiene",
     content: `
@@ -70,6 +70,70 @@ const BLOGS = [
     `,
   },
 ];
+
+const HomePage = () => {
+  return (
+    <div className="space-y-8">
+      <div className="text-center max-w-3xl mx-auto">
+        <h1 className="text-3xl font-bold mb-4">Welcome to Track4Health</h1>
+        <p className="text-lg text-gray-700">
+          Track4Health is a web-based health record management system focusing on child screening, immunization, nutrition, and hygiene awareness sessions. This system allows efficient bulk data entry, structured Excel exports, and real-time user tracking.
+        </p>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Child Screening</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>Comprehensive tracking of child health metrics including MUAC measurements for malnutrition screening and monitoring.</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Immunization Tracking</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>Monitor vaccination status for children with alerts for due vaccinations to ensure complete immunization coverage.</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Health Awareness</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>Organize and track community awareness sessions on nutrition, hygiene, and health education with comprehensive reporting.</p>
+          </CardContent>
+        </Card>
+      </div>
+      
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold mb-4">Latest Health Articles</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {BLOGS.slice(0, 3).map((blog) => (
+            <Card key={blog.id} className="hover:shadow-md transition-shadow">
+              <CardHeader>
+                <CardTitle className="flex items-start gap-2">
+                  <FileText size={18} className="mt-1 text-blue-500" />
+                  <span>{blog.title}</span>
+                </CardTitle>
+                <CardDescription>{blog.summary}</CardDescription>
+              </CardHeader>
+              <CardFooter className="flex justify-between items-center border-t pt-4">
+                <div className="text-sm text-gray-500">
+                  {blog.date} • {blog.author}
+                </div>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const BlogPage: React.FC<{ id: number }> = ({ id }) => {
   const blog = BLOGS.find((b) => b.id === id);
@@ -98,6 +162,12 @@ const BlogPage: React.FC<{ id: number }> = ({ id }) => {
 
 const Blogs = () => {
   const [selectedBlog, setSelectedBlog] = useState<number | null>(null);
+  const { pathname } = window.location;
+  
+  // Show homepage if we're on the root path
+  if (pathname === "/" && !selectedBlog) {
+    return <HomePage />;
+  }
   
   if (selectedBlog) {
     return (
