@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -16,7 +15,7 @@ export interface ChildData {
   fatherName: string;
   address?: string;
   dob?: string;
-  gender: "male" | "female" | "other"; // Changed from optional to required
+  gender: "male" | "female" | "other"; 
   remarks?: string;
   belongsToSameUC?: boolean;
 }
@@ -92,6 +91,7 @@ const HealthDataContext = createContext<HealthDataContextValue | undefined>(unde
 
 // Provider Component
 export const HealthDataProvider = ({ children }: { children: React.ReactNode }) => {
+  
   const [awarenessSessions, setAwarenessSessions] = useState<AwarenessSession[]>(() => {
     const storedSessions = localStorage.getItem('awarenessSessions');
     return storedSessions ? JSON.parse(storedSessions) : [];
@@ -138,6 +138,7 @@ export const HealthDataProvider = ({ children }: { children: React.ReactNode }) 
     setChildScreenings([...childScreenings, newSession]);
   };
 
+  
   // Update an existing awareness session
   const updateAwarenessSession = (id: string, updatedSession: Omit<AwarenessSession, 'id' | 'children' | 'attendees'>) => {
     setAwarenessSessions(
