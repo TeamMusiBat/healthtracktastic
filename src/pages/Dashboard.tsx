@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +9,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recha
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const { awarnessSessions, childScreenings, activeUsers } = useHealthData();
+  const { awarenessSessions, childScreenings, activeUsers } = useHealthData();
   const [samCount, setSamCount] = useState(0);
   const [mamCount, setMamCount] = useState(0);
   const [normalCount, setNormalCount] = useState(0);
@@ -50,9 +49,9 @@ const Dashboard = () => {
     setTodayScreenings(todayChildCount);
     
     // Calculate awareness session counts
-    setTotalSessions(awarnessSessions.length);
-    setTodaySessions(awarnessSessions.filter(session => session.date === today).length);
-  }, [awarnessSessions, childScreenings]);
+    setTotalSessions(awarenessSessions.length);
+    setTodaySessions(awarenessSessions.filter(session => session.date === today).length);
+  }, [awarenessSessions, childScreenings]);
   
   // Data for pie chart
   const nutritionData = [
