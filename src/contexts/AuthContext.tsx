@@ -26,6 +26,7 @@ interface AuthContextType {
   logout: () => void;
   isAuthenticated: boolean;
   updateLocation: (latitude: number, longitude: number) => void;
+  canLogout: boolean;
 }
 
 // Initial hardcoded developer user
@@ -44,6 +45,7 @@ const AuthContext = createContext<AuthContextType>({
   logout: () => {},
   isAuthenticated: false,
   updateLocation: () => {},
+  canLogout: false,
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -149,10 +151,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   // Logout function
   const logout = () => {
-    setUser(null);
-    localStorage.removeItem("track4health_user");
-    toast.success("Logged out successfully");
+    // Only allow master and developer to logout
+    if (user && (user.role === "master" || user.role === "developer" || canLogout)) {
+      setUser(null);
+      localStorage.removeItem("track4health_user");
+      toast.success("Logged out successfully");
+    } else {
+      toast.error("You don't have permission to logout");
+    }
   };
+  
+  // Check if user can logout
+  const canLogout = user?.role === "master" || user?.role === "developer";
   
   // Update location
   const updateLocation = (latitude: number, longitude: number) => {
@@ -178,6 +188,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logout,
         isAuthenticated: !!user,
         updateLocation,
+        canLogout,
       }}
     >
       {children}

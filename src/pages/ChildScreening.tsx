@@ -20,15 +20,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { 
@@ -39,14 +31,18 @@ import {
   AlertTriangle, 
   CheckCircle2,
   AlertCircle,
-  Filter
+  Filter,
+  Save
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHealthData, ChildScreening, ScreenedChild, VaccineStatus } from "@/contexts/HealthDataContext";
 import LocationPicker from "@/components/LocationPicker";
 import CamelCaseInput from "@/components/CamelCaseInput";
 import DateRangePicker from "@/components/DateRangePicker";
-import { createJsonExport, formatDate, getDobFromMonths, getMuacStatus, toCamelCase } from "@/utils/formatters";
+import ImageUploader from "@/components/ImageUploader";
+import ChildForm from "@/components/ChildForm";
+import PendingChildrenList from "@/components/PendingChildrenList";
+import { createJsonExport, formatDate, toCamelCase } from "@/utils/formatters";
 
 const ChildScreeningPage = () => {
   const { user } = useAuth();
@@ -66,24 +62,13 @@ const ChildScreeningPage = () => {
     ucName: "",
     userName: user?.name || "",
     userDesignation: user?.role || "",
+    screeningNumber: 1,
     children: [],
+    images: [],
   });
   
-  // State for child form
-  const [newChild, setNewChild] = useState<Partial<ScreenedChild>>({
-    name: "",
-    fatherName: "",
-    age: 6, // Default to 6 months
-    muac: 12.5, // Default to normal
-    gender: "male",
-    vaccination: "0-Dose",
-    vaccineDue: false,
-    remarks: "",
-    status: "Normal", // Will be calculated based on MUAC
-  });
-  
-  // State for bulk children
-  const [children, setChildren] = useState<Partial<ScreenedChild>[]>([]);
+  // State for pending children
+  const [pendingChildren, setPendingChildren] = useState<Partial<ScreenedChild>[]>([]);
   
   // State for export
   const [exportStartDate, setExportStartDate] = useState<Date>(new Date());
@@ -102,88 +87,61 @@ const ChildScreeningPage = () => {
     });
   };
   
-  // Handle MUAC change and update status
-  const handleMuacChange = (value: string) => {
-    const muac = parseFloat(value);
-    const status = getMuacStatus(muac);
-    
-    setNewChild({
-      ...newChild,
-      muac,
-      status,
+  // Handle images change
+  const handleImagesChange = (images: string[]) => {
+    setNewScreening({
+      ...newScreening,
+      images: images,
     });
   };
   
-  // Handle adding a new child to the bulk list
-  const handleAddChild = () => {
-    // Validate form
-    if (!newChild.name || !newChild.fatherName) {
-      toast.error("Name and Father Name are required");
-      return;
+  // Handle adding a new child
+  const handleAddChild = (child: Partial<ScreenedChild>) => {
+    setPendingChildren([...pendingChildren, child]);
+  };
+  
+  // Check for duplicate child
+  const checkDuplicate = (name: string, fatherName: string) => {
+    // Check in pending children
+    if (pendingChildren.some(
+      c => c.name?.toLowerCase() === name.toLowerCase() && 
+           c.fatherName?.toLowerCase() === fatherName.toLowerCase()
+    )) {
+      return true;
     }
     
-    if (newChild.age! < 6 || newChild.age! > 59) {
-      toast.error("Age must be between 6 and 59 months");
-      return;
-    }
-    
-    // Format names (camelcase)
-    const formattedName = toCamelCase(newChild.name || "");
-    const formattedFatherName = toCamelCase(newChild.fatherName || "");
-    
-    // Check for duplicate
+    // Check in database
     if (
       newScreening.villageName &&
       newScreening.date &&
       checkDuplicateChild(
-        formattedName,
-        formattedFatherName,
+        name,
+        fatherName,
         newScreening.villageName,
         newScreening.date
       )
     ) {
-      toast.warning("This child already exists for this screening and village");
+      return true;
+    }
+    
+    return false;
+  };
+  
+  // Handle removing a child
+  const handleRemoveChild = (id: string) => {
+    setPendingChildren(pendingChildren.filter((c) => c.id !== id));
+  };
+  
+  // Handle saving the screening
+  const handleSaveScreening = () => {
+    // Validate form
+    if (!newScreening.villageName || !newScreening.ucName) {
+      toast.error("Village name and UC name are required");
       return;
     }
     
-    // Add to bulk list
-    const newChildWithId: Partial<ScreenedChild> = {
-      ...newChild,
-      id: Date.now().toString(),
-      name: formattedName,
-      fatherName: formattedFatherName,
-      dob: newChild.age ? getDobFromMonths(newChild.age) : undefined,
-      status: getMuacStatus(newChild.muac!),
-    };
-    
-    setChildren([...children, newChildWithId]);
-    
-    // Reset form
-    setNewChild({
-      name: "",
-      fatherName: "",
-      age: 6,
-      muac: 12.5,
-      gender: "male",
-      vaccination: "0-Dose",
-      vaccineDue: false,
-      remarks: "",
-      status: "Normal",
-    });
-    
-    toast.success("Child added to screening");
-  };
-  
-  // Handle removing a child from the bulk list
-  const handleRemoveChild = (id: string) => {
-    setChildren(children.filter((c) => c.id !== id));
-  };
-  
-  // Handle saving the entire screening
-  const handleSaveScreening = () => {
-    // Validate form
-    if (!newScreening.villageName || !newScreening.ucName || children.length === 0) {
-      toast.error("Village name, UC name, and at least one child are required");
+    if (pendingChildren.length === 0) {
+      toast.error("At least one child is required");
       return;
     }
     
@@ -199,8 +157,10 @@ const ChildScreeningPage = () => {
       userName: newScreening.userName || user?.name || "",
       userDesignation: newScreening.userDesignation || user?.role || "",
       location: newScreening.location,
-      children: children as ScreenedChild[],
+      children: pendingChildren as ScreenedChild[],
       createdBy: user?.username || "",
+      screeningNumber: newScreening.screeningNumber || 1,
+      images: newScreening.images,
     });
     
     // Reset form
@@ -210,9 +170,11 @@ const ChildScreeningPage = () => {
       ucName: "",
       userName: user?.name || "",
       userDesignation: user?.role || "",
+      screeningNumber: 1,
       children: [],
+      images: [],
     });
-    setChildren([]);
+    setPendingChildren([]);
     
     toast.success("Child screening saved successfully");
   };
@@ -315,7 +277,7 @@ const ChildScreeningPage = () => {
                 <span>Add Screening</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl">
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add New Child Screening</DialogTitle>
                 <DialogDescription>
@@ -341,6 +303,17 @@ const ChildScreeningPage = () => {
                   </div>
                   
                   <div className="space-y-2">
+                    <Label htmlFor="screeningNumber">Screening Number</Label>
+                    <Input
+                      id="screeningNumber"
+                      type="number"
+                      value={newScreening.screeningNumber || 1}
+                      onChange={(e) => setNewScreening({ ...newScreening, screeningNumber: Number(e.target.value) })}
+                      placeholder="Enter screening number"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
                     <Label htmlFor="villageName">Village Name</Label>
                     <CamelCaseInput
                       id="villageName"
@@ -359,35 +332,10 @@ const ChildScreeningPage = () => {
                       placeholder="Enter UC name"
                     />
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="userName">User Name</Label>
-                    <CamelCaseInput
-                      id="userName"
-                      defaultValue={newScreening.userName}
-                      onValueChange={(value) => setNewScreening({ ...newScreening, userName: value })}
-                      placeholder="Enter user name"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="userDesignation">User Designation</Label>
-                    <Select
-                      onValueChange={(value) => setNewScreening({ ...newScreening, userDesignation: value })}
-                      defaultValue={newScreening.userDesignation}
-                    >
-                      <SelectTrigger id="userDesignation">
-                        <SelectValue placeholder="Select designation" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="fmt">FMT</SelectItem>
-                        <SelectItem value="socialMobilizer">Social Mobilizer</SelectItem>
-                        <SelectItem value="master">Master</SelectItem>
-                        <SelectItem value="developer">Developer</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
+                </div>
+                
+                {/* Location and Image Upload */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Location</Label>
                     <LocationPicker
@@ -396,189 +344,41 @@ const ChildScreeningPage = () => {
                       initialLongitude={newScreening.location?.longitude}
                     />
                   </div>
+                  
+                  <div className="space-y-2">
+                    <ImageUploader 
+                      onImagesChange={handleImagesChange}
+                      initialImages={newScreening.images}
+                    />
+                  </div>
                 </div>
                 
                 {/* Add Child Form */}
                 <div className="border p-4 rounded-md">
-                  <h3 className="text-lg font-medium mb-4">Add Child</h3>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="childName">Name</Label>
-                      <CamelCaseInput
-                        id="childName"
-                        defaultValue={newChild.name}
-                        onValueChange={(value) => setNewChild({ ...newChild, name: value })}
-                        placeholder="Enter child name"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="fatherName">Father Name</Label>
-                      <CamelCaseInput
-                        id="fatherName"
-                        defaultValue={newChild.fatherName}
-                        onValueChange={(value) => setNewChild({ ...newChild, fatherName: value })}
-                        placeholder="Enter father name"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="age">Age (months, 6-59)</Label>
-                      <Input
-                        id="age"
-                        type="number"
-                        min={6}
-                        max={59}
-                        value={newChild.age || ""}
-                        onChange={(e) => setNewChild({ ...newChild, age: Number(e.target.value) })}
-                        placeholder="Enter age in months"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="gender">Gender</Label>
-                      <Select
-                        onValueChange={(value: "male" | "female" | "other") => setNewChild({ ...newChild, gender: value })}
-                        defaultValue={newChild.gender}
-                      >
-                        <SelectTrigger id="gender">
-                          <SelectValue placeholder="Select gender" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="male">Male</SelectItem>
-                          <SelectItem value="female">Female</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="muac">MUAC (cm)</Label>
-                      <Input
-                        id="muac"
-                        type="number"
-                        step="0.1"
-                        value={newChild.muac || ""}
-                        onChange={(e) => handleMuacChange(e.target.value)}
-                        placeholder="Enter MUAC in cm"
-                        className={`border-2 ${
-                          newChild.status === "SAM"
-                            ? "border-health-sam"
-                            : newChild.status === "MAM"
-                            ? "border-health-mam"
-                            : "border-health-normal"
-                        }`}
-                      />
-                      <div className="flex items-center mt-1 gap-2">
-                        <div className="flex-1 text-xs">
-                          {newChild.status === "SAM" && (
-                            <span className="text-health-sam">SAM: MUAC ≤ 11 cm</span>
-                          )}
-                          {newChild.status === "MAM" && (
-                            <span className="text-health-mam">MAM: MUAC ≤ 12 cm</span>
-                          )}
-                          {newChild.status === "Normal" && (
-                            <span className="text-health-normal">Normal: MUAC {'>'}12 cm</span>
-                          )}
-                        </div>
-                        {getStatusBadge(newChild.status as "SAM" | "MAM" | "Normal")}
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="vaccination">Vaccination Status</Label>
-                      <Select
-                        onValueChange={(value: VaccineStatus) => setNewChild({ ...newChild, vaccination: value })}
-                        defaultValue={newChild.vaccination}
-                      >
-                        <SelectTrigger id="vaccination">
-                          <SelectValue placeholder="Select vaccination status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="0-Dose">0-Dose</SelectItem>
-                          <SelectItem value="1st-Dose">1st-Dose</SelectItem>
-                          <SelectItem value="2nd-Dose">2nd-Dose</SelectItem>
-                          <SelectItem value="3rd-Dose">3rd-Dose</SelectItem>
-                          <SelectItem value="MR-1">MR-1</SelectItem>
-                          <SelectItem value="MR-2">MR-2</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="space-y-2 flex items-center">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="vaccineDue"
-                          checked={newChild.vaccineDue}
-                          onCheckedChange={(checked) => setNewChild({ ...newChild, vaccineDue: checked as boolean })}
-                        />
-                        <Label htmlFor="vaccineDue">Vaccine Due</Label>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="remarks">Remarks (optional)</Label>
-                      <Input
-                        id="remarks"
-                        value={newChild.remarks || ""}
-                        onChange={(e) => setNewChild({ ...newChild, remarks: e.target.value })}
-                        placeholder="Enter remarks"
-                      />
-                    </div>
-                  </div>
-                  
-                  <Button
-                    onClick={handleAddChild}
-                    className="mt-4"
-                  >
-                    Add Child
-                  </Button>
+                  <ChildForm 
+                    onAddChild={handleAddChild}
+                    checkDuplicate={checkDuplicate}
+                  />
                 </div>
                 
-                {/* Children List */}
-                <div>
-                  <h3 className="text-lg font-medium mb-2">Children ({children.length})</h3>
-                  
-                  {children.length > 0 ? (
-                    <div className="border rounded-md divide-y">
-                      {children.map((child) => (
-                        <div 
-                          key={child.id} 
-                          className={`p-3 flex justify-between items-center ${getStatusClass(child.status as "SAM" | "MAM" | "Normal")}`}
-                        >
-                          <div>
-                            <p className="font-medium">{child.name}</p>
-                            <p className="text-sm text-gray-500">
-                              Father: {child.fatherName} | Age: {child.age} months | MUAC: {child.muac} cm
-                            </p>
-                            <div className="text-sm mt-1">
-                              {getVaccineBadge(child.vaccination as VaccineStatus, child.vaccineDue as boolean)}
-                            </div>
-                          </div>
-                          <div className="flex flex-col items-end gap-2">
-                            {getStatusBadge(child.status as "SAM" | "MAM" | "Normal")}
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleRemoveChild(child.id!)}
-                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <Trash2 size={16} />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-gray-500 italic">No children added yet</p>
-                  )}
+                {/* Pending Children List */}
+                <div className="border p-4 rounded-md">
+                  <h3 className="text-lg font-medium mb-2">Pending Children ({pendingChildren.length})</h3>
+                  <PendingChildrenList 
+                    children={pendingChildren}
+                    onRemove={handleRemoveChild}
+                  />
                 </div>
               </div>
               
               <DialogFooter>
-                <Button onClick={handleSaveScreening} disabled={children.length === 0}>
-                  Save Screening
+                <Button 
+                  onClick={handleSaveScreening} 
+                  disabled={pendingChildren.length === 0}
+                  className="flex items-center gap-2"
+                >
+                  <Save size={16} />
+                  <span>Save Screening</span>
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -920,6 +720,12 @@ const ChildScreeningPage = () => {
                           <span className="text-gray-500">Date:</span>
                           <span>{formatDate(screening.date)}</span>
                         </div>
+                        {child.address && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Address:</span>
+                            <span>{child.address}</span>
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                     <CardFooter>
