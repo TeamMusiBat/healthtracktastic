@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,7 +34,7 @@ import { createJsonExport, formatDate, toCamelCase } from "@/utils/formatters";
 const AwarenessSessions = () => {
   const { user } = useAuth();
   const { 
-    awarnessSessions, 
+    awarenessSessions, 
     addAwarenessSession, 
     deleteAwarenessSession,
     getAwarenessSessionsByDateRange,
@@ -168,14 +167,14 @@ const AwarenessSessions = () => {
     
     if (exportOption === "today") {
       const today = new Date().toISOString().slice(0, 10);
-      dataToExport = awarnessSessions.filter((session) => session.date === today);
+      dataToExport = awarenessSessions.filter((session) => session.date === today);
     } else if (exportOption === "range") {
       dataToExport = getAwarenessSessionsByDateRange(
         exportStartDate.toISOString().slice(0, 10),
         exportEndDate.toISOString().slice(0, 10)
       );
     } else {
-      dataToExport = awarnessSessions;
+      dataToExport = awarenessSessions;
     }
     
     if (dataToExport.length === 0) {
@@ -386,7 +385,7 @@ const AwarenessSessions = () => {
         </TabsList>
         
         <TabsContent value="list" className="space-y-4">
-          {awarnessSessions.length > 0 ? (
+          {awarenessSessions.length > 0 ? (
             <div className="rounded-md border">
               <div className="grid grid-cols-7 gap-4 p-4 font-medium border-b">
                 <div className="col-span-2">Details</div>
@@ -398,7 +397,7 @@ const AwarenessSessions = () => {
               </div>
               
               <div className="divide-y">
-                {awarnessSessions.map((session) => (
+                {awarenessSessions.map((session) => (
                   <div key={session.id} className="grid grid-cols-7 gap-4 p-4 items-center">
                     <div className="col-span-2">
                       <p className="font-medium">{session.villageName}</p>
@@ -450,9 +449,9 @@ const AwarenessSessions = () => {
         </TabsContent>
         
         <TabsContent value="cards" className="space-y-4">
-          {awarnessSessions.length > 0 ? (
+          {awarenessSessions.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {awarnessSessions.map((session) => (
+              {awarenessSessions.map((session) => (
                 <Card key={session.id}>
                   <CardHeader>
                     <div className="flex justify-between items-start">

@@ -57,6 +57,7 @@ export interface ScreeningData {
   villageName: string;
   ucName: string;
   sessionNumber?: number;
+  screeningNumber?: number;
   children: ChildData[];
   location?: { latitude: number; longitude: number };
   images?: string[];
@@ -67,19 +68,22 @@ export interface ScreeningData {
 
 export interface ChildScreening extends ScreeningData {
   children: ScreenedChild[];
+  screeningNumber?: number;
 }
 
 export interface AwarenessSession extends ScreeningData {
   attendees: Attendee[];
+  sessionNumber?: number;
 }
 
 // Context type
 interface HealthDataContextValue {
   awarenessSessions: AwarenessSession[];
-  childScreenings: ScreeningData[];
+  awarnessSessions: AwarenessSession[]; // Keep for backward compatibility
+  childScreenings: ChildScreening[];
   activeUsers: { id: string; name: string; role: string; location?: { latitude: number; longitude: number } }[];
-  addAwarenessSession: (session: Omit<AwarenessSession, 'id' | 'attendees'>) => void;
-  addChildScreening: (session: Omit<ChildScreening, 'id' | 'children'>) => void;
+  addAwarenessSession: (session: Omit<AwarenessSession, 'id'>) => void;
+  addChildScreening: (session: Omit<ChildScreening, 'id'>) => void;
   updateAwarenessSession: (id: string, updatedSession: Omit<ScreeningData, 'id' | 'children'>) => void;
   updateChildScreening: (id: string, updatedSession: Omit<ScreeningData, 'id' | 'children'>) => void;
   deleteAwarenessSession: (id: string) => void;
@@ -87,8 +91,8 @@ interface HealthDataContextValue {
   addChildToSession: (sessionId: string, child: Omit<ChildData, 'id'>, isAwarenessSession: boolean, address?: string) => void;
   updateChildInSession: (sessionId: string, childId: string, updatedChild: ChildData, isAwarenessSession: boolean) => void;
   deleteChildFromSession: (sessionId: string, childId: string, isAwarenessSession: boolean) => void;
-  getChildScreeningsByDateRange: (startDate: string, endDate: string) => ScreeningData[];
-  getChildScreeningsByStatus: (status: "SAM" | "MAM" | "Normal") => ScreeningData[];
+  getChildScreeningsByDateRange: (startDate: string, endDate: string) => ChildScreening[];
+  getChildScreeningsByStatus: (status: "SAM" | "MAM" | "Normal") => ChildScreening[];
   checkDuplicateChild: (name: string, fatherName: string, villageName: string, date: string) => boolean;
   getAwarenessSessionsByDateRange: (startDate: string, endDate: string) => AwarenessSession[];
   checkDuplicateAttendee: (name: string, fatherName: string, villageName: string, date: string) => boolean;
@@ -104,7 +108,7 @@ export const HealthDataProvider = ({ children }: { children: React.ReactNode }) 
     return storedSessions ? JSON.parse(storedSessions) : [];
   });
 
-  const [childScreenings, setChildScreenings] = useState<ScreeningData[]>(() => {
+  const [childScreenings, setChildScreenings] = useState<ChildScreening[]>(() => {
     const storedScreenings = localStorage.getItem('childScreenings');
     return storedScreenings ? JSON.parse(storedScreenings) : [];
   });
@@ -125,21 +129,21 @@ export const HealthDataProvider = ({ children }: { children: React.ReactNode }) 
   }, [childScreenings]);
 
   // Add a new awareness session
-  const addAwarenessSession = (session: Omit<AwarenessSession, 'id' | 'attendees'>) => {
+  const addAwarenessSession = (session: Omit<AwarenessSession, 'id'>) => {
     const newSession: AwarenessSession = {
       id: uuidv4(),
       ...session,
-      attendees: [],
+      attendees: session.attendees || [],
     };
     setAwarenessSessions([...awarenessSessions, newSession]);
   };
 
   // Add a new child screening session
-  const addChildScreening = (session: Omit<ChildScreening, 'id' | 'children'>) => {
-    const newSession: ScreeningData = {
+  const addChildScreening = (session: Omit<ChildScreening, 'id'>) => {
+    const newSession: ChildScreening = {
       id: uuidv4(),
       ...session,
-      children: [],
+      children: session.children || [],
     };
     setChildScreenings([...childScreenings, newSession]);
   };
@@ -305,6 +309,7 @@ export const HealthDataProvider = ({ children }: { children: React.ReactNode }) 
 
   const value: HealthDataContextValue = {
     awarenessSessions,
+    awarnessSessions: awarenessSessions, // Add this for backward compatibility
     childScreenings,
     activeUsers,
     addAwarenessSession,
