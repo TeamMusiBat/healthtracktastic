@@ -1,10 +1,11 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 210 40% 98%;
     --foreground: 222.2 84% 4.9%;
 
     --card: 0 0% 100%;
@@ -13,11 +14,11 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
+    --primary: 196 52% 56%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 200 50% 45%;
+    --secondary-foreground: 210 40% 98%;
 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
@@ -35,19 +36,12 @@
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
@@ -61,10 +55,10 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 210 40% 98%;
+    --primary: 196 52% 56%;
     --primary-foreground: 222.2 47.4% 11.2%;
 
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 200 50% 45%;
     --secondary-foreground: 210 40% 98%;
 
     --muted: 217.2 32.6% 17.5%;
@@ -97,5 +91,51 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .sam-row {
+    @apply border-l-4 border-health-sam bg-red-50;
+  }
+  
+  .mam-row {
+    @apply border-l-4 border-health-mam bg-yellow-50;
+  }
+  
+  .normal-row {
+    @apply border-l-4 border-health-normal bg-green-50;
+  }
+  
+  .camelcase {
+    text-transform: capitalize;
+  }
+  
+  .status-badge {
+    @apply px-2 py-1 rounded-full text-xs font-medium;
+  }
+  
+  .status-badge-sam {
+    @apply bg-health-sam text-white;
+  }
+  
+  .status-badge-mam {
+    @apply bg-health-mam text-gray-800;
+  }
+  
+  .status-badge-normal {
+    @apply bg-health-normal text-white;
+  }
+  
+  .vaccine-badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+  
+  .vaccine-complete {
+    @apply bg-green-100 text-green-800;
+  }
+  
+  .vaccine-due {
+    @apply bg-yellow-100 text-yellow-800;
   }
 }
