@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -479,7 +478,7 @@ const ChildScreeningPage = () => {
                             <span className="text-health-mam">MAM: MUAC ≤ 12 cm</span>
                           )}
                           {newChild.status === "Normal" && (
-                            <span className="text-health-normal">Normal: MUAC > 12 cm</span>
+                            <span className="text-health-normal">Normal: MUAC {'>'}12 cm</span>
                           )}
                         </div>
                         {getStatusBadge(newChild.status as "SAM" | "MAM" | "Normal")}
@@ -890,56 +889,4 @@ const ChildScreeningPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredScreenings.flatMap((screening) =>
                 screening.children.map((child) => (
-                  <Card key={child.id} className={getStatusClass(child.status)}>
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <CardTitle>{child.name}</CardTitle>
-                          <CardDescription>Father: {child.fatherName}</CardDescription>
-                        </div>
-                        <div>
-                          {getStatusBadge(child.status)}
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pb-2">
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-gray-500">Village:</span>
-                          <span>{screening.villageName}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-500">Age:</span>
-                          <span>{child.age} months</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-500">MUAC:</span>
-                          <span>{child.muac} cm</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-500">Date:</span>
-                          <span>{formatDate(screening.date)}</span>
-                        </div>
-                      </div>
-                    </CardContent>
-                    <CardFooter>
-                      <div className="w-full">
-                        {getVaccineBadge(child.vaccination, child.vaccineDue)}
-                      </div>
-                    </CardFooter>
-                  </Card>
-                ))
-              )}
-            </div>
-          ) : (
-            <div className="flex justify-center items-center h-40">
-              <p className="text-gray-500">No child screenings found</p>
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-};
-
-export default ChildScreeningPage;
+                  <Card key
