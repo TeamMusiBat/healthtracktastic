@@ -14,6 +14,7 @@ import Blogs from "./pages/Blogs";
 import NotFound from "./pages/NotFound";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { HealthDataProvider } from "./contexts/HealthDataContext";
+import { ThemeProvider } from "./components/theme-provider";
 import { useState, useEffect } from "react";
 
 const queryClient = new QueryClient();
@@ -88,17 +89,19 @@ const AppContent = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <AuthProvider>
-        <HealthDataProvider>
-          <BrowserRouter>
-            <AppContent />
-          </BrowserRouter>
-        </HealthDataProvider>
-      </AuthProvider>
-    </TooltipProvider>
+    <ThemeProvider defaultTheme="light">
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <AuthProvider>
+          <HealthDataProvider>
+            <BrowserRouter>
+              <AppContent />
+            </BrowserRouter>
+          </HealthDataProvider>
+        </AuthProvider>
+      </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 

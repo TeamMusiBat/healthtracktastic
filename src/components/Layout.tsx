@@ -1,28 +1,20 @@
+
 import React from "react";
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
   SheetHeader,
   SheetTitle,
+  SheetDescription,
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-  navigationMenuTriggerStyle,
-} from "@/components/ui/navigation-menu";
-import { ModeToggle } from "@/components/mode-toggle";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ModeToggle } from "@/components/mode-toggle";
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, user, logout } = useAuth();
@@ -34,7 +26,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       {isMobile && (
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="sm" className="md:hidden">
+            <Button variant="ghost" size="sm" className="md:hidden absolute top-4 left-4 z-50">
               <Menu className="h-4 w-4" />
             </Button>
           </SheetTrigger>
@@ -73,7 +65,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       )}
 
       {/* Desktop Navigation */}
-      <aside className="hidden md:flex flex-col w-64 border-r bg-secondary">
+      <aside className="hidden md:flex flex-col w-64 border-r bg-sidebar">
         <div className="p-4">
           <Link to="/" className="font-bold text-lg">
             Track4Health
@@ -83,29 +75,29 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         <nav className="flex-grow p-4">
           <ul className="space-y-2">
             <li>
-              <Link to="/" className="block py-2 hover:bg-secondary rounded-md px-2">
+              <Link to="/" className="block py-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-md px-2">
                 Dashboard
               </Link>
             </li>
             {isAuthenticated && user?.role === "developer" && (
               <li>
-                <Link to="/users" className="block py-2 hover:bg-secondary rounded-md px-2">
+                <Link to="/users" className="block py-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-md px-2">
                   Users
                 </Link>
               </li>
             )}
             <li>
-              <Link to="/awareness-sessions" className="block py-2 hover:bg-secondary rounded-md px-2">
+              <Link to="/awareness-sessions" className="block py-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-md px-2">
                 Awareness Sessions
               </Link>
             </li>
             <li>
-              <Link to="/child-screening" className="block py-2 hover:bg-secondary rounded-md px-2">
+              <Link to="/child-screening" className="block py-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-md px-2">
                 Child Screening
               </Link>
             </li>
             <li>
-              <Link to="/blogs" className="block py-2 hover:bg-secondary rounded-md px-2">
+              <Link to="/blogs" className="block py-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-md px-2">
                 Blogs
               </Link>
             </li>
@@ -120,12 +112,12 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-6">
+      <main className="flex-1 p-6 overflow-auto">
         {children}
       </main>
 
       {/* Theme Toggle */}
-      <div className="absolute top-4 right-4">
+      <div className="absolute top-4 right-4 z-50">
         <ModeToggle />
       </div>
     </div>
