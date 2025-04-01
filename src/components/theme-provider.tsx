@@ -1,7 +1,8 @@
 
 import * as React from "react";
 import { createContext, useContext, useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+// Remove this import as we'll handle theme changes differently
+// import { useLocation } from "react-router-dom";
 
 type Theme = "dark" | "light" | "system";
 
@@ -51,9 +52,29 @@ export function ThemeProvider({
     () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
   );
   
-  const location = useLocation();
+  // We'll use a reference to track path changes manually instead of useLocation
+  const [randomSeed, setRandomSeed] = useState<number>(Math.random());
   
-  // Apply theme and random color when theme changes or location changes
+  // Generate a new random seed when the component mounts
+  useEffect(() => {
+    setRandomSeed(Math.random());
+  }, []);
+  
+  // Add an event listener to detect navigation events
+  useEffect(() => {
+    // This will trigger when the URL changes
+    const handleNavigation = () => {
+      setRandomSeed(Math.random());
+    };
+
+    window.addEventListener('popstate', handleNavigation);
+    
+    return () => {
+      window.removeEventListener('popstate', handleNavigation);
+    };
+  }, []);
+  
+  // Apply theme and random color when theme changes or randomSeed changes
   useEffect(() => {
     const root = window.document.documentElement;
     root.classList.remove("light", "dark");
@@ -80,7 +101,7 @@ export function ThemeProvider({
       root.style.setProperty('--foreground', 'rgb(15, 15, 15)');
     }
     
-  }, [theme, location]);
+  }, [theme, randomSeed]);
 
   const value = {
     theme,
