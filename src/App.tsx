@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import Index from "./pages/Index";
@@ -15,8 +15,6 @@ import Blogs from "./pages/Blogs";
 import NotFound from "./pages/NotFound";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { HealthDataProvider } from "./contexts/HealthDataContext";
-import { ThemeProvider } from "./components/theme-provider";
-import { useState, useEffect } from "react";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +53,12 @@ const ProtectedRoute = ({ children, requiredRoles = [] }: { children: React.Reac
 
 const AppContent = () => {
   const { isAuthenticated } = useAuth();
+  const location = useLocation();
+
+  // This will trigger a theme regeneration on route change
+  useEffect(() => {
+    // The theme provider will handle the color change via the popstate event
+  }, [location.pathname]);
 
   return (
     <Layout>
@@ -89,22 +93,21 @@ const AppContent = () => {
   );
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="light">
+const App = () => {
+  // We don't need the BrowserRouter here because it's in main.tsx
+  return (
+    <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
         <AuthProvider>
           <HealthDataProvider>
-            <BrowserRouter>
-              <AppContent />
-            </BrowserRouter>
+            <AppContent />
           </HealthDataProvider>
         </AuthProvider>
       </TooltipProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
-);
+    </QueryClientProvider>
+  );
+};
 
 export default App;

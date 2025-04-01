@@ -94,8 +94,14 @@
   body {
     @apply bg-background text-foreground transition-colors duration-300;
   }
+
+  /* Ensure text is always readable regardless of background */
+  h1, h2, h3, h4, h5, h6, p, span, a, button, input, textarea, select, label {
+    @apply text-foreground;
+  }
 }
 
+/* Rest of the CSS remains the same */
 @layer components {
   .sam-row {
     @apply border-l-4 border-health-sam bg-red-50;

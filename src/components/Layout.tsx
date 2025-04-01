@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { 
@@ -34,6 +34,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, user, logout } = useAuth();
   const isMobile = useIsMobile();
   const location = useLocation();
+  const [isHovering, setIsHovering] = useState(false);
   
   const isActiveRoute = (path: string) => {
     return location.pathname === path;
@@ -80,7 +81,13 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     <SidebarProvider defaultOpen={!isMobile}>
       <div className="flex min-h-screen w-full bg-background">
         {/* Dynamic Sidebar */}
-        <Sidebar variant={isMobile ? "floating" : "sidebar"} collapsible={isMobile ? "offcanvas" : "icon"}>
+        <Sidebar 
+          variant={isMobile ? "floating" : "sidebar"} 
+          collapsible={isMobile ? "offcanvas" : "icon"}
+          className={`transition-all duration-300 ${isHovering && !isMobile ? 'w-64' : ''}`}
+          onMouseEnter={() => !isMobile && setIsHovering(true)}
+          onMouseLeave={() => !isMobile && setIsHovering(false)}
+        >
           <SidebarHeader className="flex items-center justify-between p-4">
             <Link to="/" className="flex items-center gap-2">
               <h2 className="text-xl font-bold">Track4Health</h2>

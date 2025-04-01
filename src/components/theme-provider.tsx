@@ -1,8 +1,6 @@
 
 import * as React from "react";
 import { createContext, useContext, useEffect, useState } from "react";
-// Remove this import as we'll handle theme changes differently
-// import { useLocation } from "react-router-dom";
 
 type Theme = "dark" | "light" | "system";
 
@@ -24,20 +22,19 @@ const initialState: ThemeProviderState = {
 
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 
-// Generate random colors for themes
+// Generate random colors for themes with better contrast
 const generateRandomColor = (isDark: boolean) => {
-  // For dark themes, generate darker colors
   if (isDark) {
-    // Dark colors have lower RGB values
-    const r = Math.floor(Math.random() * 60);
-    const g = Math.floor(Math.random() * 60);
-    const b = Math.floor(Math.random() * 100);
+    // For dark themes, generate darker colors with better contrast
+    const r = Math.floor(Math.random() * 40); // Lower values for darker colors
+    const g = Math.floor(Math.random() * 40);
+    const b = Math.floor(Math.random() * 70);
     return `rgb(${r}, ${g}, ${b})`;
   } else {
-    // For light themes, generate lighter colors
-    const r = Math.floor(Math.random() * 100) + 155;
-    const g = Math.floor(Math.random() * 100) + 155;
-    const b = Math.floor(Math.random() * 100) + 155;
+    // For light themes, generate lighter colors with better contrast
+    const r = Math.floor(Math.random() * 60) + 195; // Higher values for lighter colors
+    const g = Math.floor(Math.random() * 60) + 195;
+    const b = Math.floor(Math.random() * 60) + 195;
     return `rgb(${r}, ${g}, ${b})`;
   }
 };
@@ -69,8 +66,24 @@ export function ThemeProvider({
 
     window.addEventListener('popstate', handleNavigation);
     
+    // Also trigger on history.pushState and history.replaceState
+    const originalPushState = history.pushState.bind(history);
+    const originalReplaceState = history.replaceState.bind(history);
+    
+    history.pushState = (...args) => {
+      originalPushState(...args);
+      handleNavigation();
+    };
+    
+    history.replaceState = (...args) => {
+      originalReplaceState(...args);
+      handleNavigation();
+    };
+    
     return () => {
       window.removeEventListener('popstate', handleNavigation);
+      history.pushState = originalPushState;
+      history.replaceState = originalReplaceState;
     };
   }, []);
   
@@ -92,13 +105,13 @@ export function ThemeProvider({
     const backgroundColor = generateRandomColor(actualTheme === "dark");
     root.style.setProperty('--random-background', backgroundColor);
     
-    // Update CSS variables based on theme
+    // Update CSS variables based on theme with high contrast text
     if (actualTheme === "dark") {
       root.style.setProperty('--background', `${backgroundColor}`);
-      root.style.setProperty('--foreground', 'rgb(245, 245, 245)');
+      root.style.setProperty('--foreground', 'rgb(245, 245, 245)'); // Very light text for dark mode
     } else {
       root.style.setProperty('--background', `${backgroundColor}`);
-      root.style.setProperty('--foreground', 'rgb(15, 15, 15)');
+      root.style.setProperty('--foreground', 'rgb(15, 15, 15)'); // Very dark text for light mode
     }
     
   }, [theme, randomSeed]);
@@ -108,6 +121,8 @@ export function ThemeProvider({
     setTheme: (theme: Theme) => {
       localStorage.setItem(storageKey, theme);
       setTheme(theme);
+      // Generate new random color when theme changes
+      setRandomSeed(Math.random());
     },
   };
 

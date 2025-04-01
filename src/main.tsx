@@ -8,8 +8,10 @@ import { BrowserRouter } from 'react-router-dom'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <ThemeProvider defaultTheme="system" storageKey="track4health-theme">
-      <App />
-    </ThemeProvider>
+    <BrowserRouter>
+      <ThemeProvider defaultTheme="system" storageKey="track4health-theme">
+        <App />
+      </ThemeProvider>
+    </BrowserRouter>
   </React.StrictMode>,
 )
