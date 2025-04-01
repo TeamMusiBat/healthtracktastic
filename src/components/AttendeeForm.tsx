@@ -17,7 +17,7 @@ interface AttendeeFormProps {
 }
 
 const AttendeeForm: React.FC<AttendeeFormProps> = ({ onAddAttendee, checkDuplicate }) => {
-  const initialAttendeeState = {
+  const initialAttendeeState: Partial<Attendee> = {
     name: "",
     fatherHusbandName: "",
     age: 0,
@@ -28,7 +28,7 @@ const AttendeeForm: React.FC<AttendeeFormProps> = ({ onAddAttendee, checkDuplica
     belongsToSameUC: true,
   };
   
-  const [newAttendee, setNewAttendee] = useState<Partial<Attendee>>({...initialAttendeeState});
+  const [newAttendee, setNewAttendee] = useState<Partial<Attendee>>(initialAttendeeState);
   const [otherAddress, setOtherAddress] = useState<string>("");
   
   const handleAddAttendee = () => {

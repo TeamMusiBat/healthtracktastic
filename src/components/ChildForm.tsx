@@ -17,7 +17,7 @@ interface ChildFormProps {
 }
 
 const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => {
-  const initialChildState = {
+  const initialChildState: Partial<ScreenedChild> = {
     name: "",
     fatherName: "",
     age: 6, // Default to 6 months
