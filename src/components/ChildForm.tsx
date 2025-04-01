@@ -191,15 +191,15 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
           className="flex space-x-4"
         >
           <div className="flex items-center space-x-2">
-            <RadioGroupItem value="complete" id="complete" name="vaccination" />
+            <RadioGroupItem value="complete" id="complete" />
             <Label htmlFor="complete">Complete</Label>
           </div>
           <div className="flex items-center space-x-2">
-            <RadioGroupItem value="partial" id="partial" name="vaccination" />
+            <RadioGroupItem value="partial" id="partial" />
             <Label htmlFor="partial">Partial</Label>
           </div>
           <div className="flex items-center space-x-2">
-            <RadioGroupItem value="none" id="none" name="vaccination" />
+            <RadioGroupItem value="none" id="none" />
             <Label htmlFor="none">None</Label>
           </div>
         </RadioGroup>
