@@ -25,7 +25,7 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
     vaccination: "complete" as VaccineStatus,
     vaccineDue: false,
     remarks: "",
-    status: "normal",
+    status: "Normal",
     belongsToSameUC: true,
   };
   
@@ -66,7 +66,7 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
       vaccination: newChild.vaccination as VaccineStatus,
       vaccineDue: newChild.vaccineDue,
       remarks: newChild.remarks || "",
-      status: newChild.status as "normal" | "mam" | "sam",
+      status: newChild.status as "SAM" | "MAM" | "Normal",
       belongsToSameUC: newChild.belongsToSameUC,
       // Only add otherLocation if belongsToSameUC is false
       ...((!newChild.belongsToSameUC && otherAddress) ? { otherLocation: otherAddress } : {})
@@ -151,14 +151,14 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
             value={newChild.muac}
             onChange={(e) => {
               const muac = parseFloat(e.target.value) || 0;
-              let status = "normal";
-              if (muac < 11.5) status = "sam";
-              else if (muac < 12.5) status = "mam";
+              let status: "SAM" | "MAM" | "Normal" = "Normal";
+              if (muac < 11.5) status = "SAM";
+              else if (muac < 12.5) status = "MAM";
               
               setNewChild({
                 ...newChild, 
                 muac, 
-                status: status as "normal" | "mam" | "sam"
+                status
               });
             }}
           />
