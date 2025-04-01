@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,17 +54,45 @@ const ChildScreeningPage = () => {
     checkDuplicateChild 
   } = useHealthData();
   
+  // Get today's date in YYYY-MM-DD format
+  const today = new Date().toISOString().slice(0, 10);
+  
+  // Find the highest screening number for today
+  const getNextScreeningNumber = () => {
+    const todayScreenings = childScreenings.filter(screening => screening.date === today);
+    if (todayScreenings.length === 0) return 1;
+    
+    const maxScreeningNumber = Math.max(...todayScreenings.map(screening => screening.screeningNumber || 1));
+    return maxScreeningNumber + 1;
+  };
+  
   // State for screening form
   const [newScreening, setNewScreening] = useState<Partial<ChildScreening>>({
-    date: new Date().toISOString().slice(0, 10),
+    date: today,
     villageName: "",
     ucName: "",
     userName: user?.name || "",
     userDesignation: user?.role || "",
-    screeningNumber: 1,
+    screeningNumber: getNextScreeningNumber(),
     children: [],
     images: [],
   });
+  
+  // Update screening number when date changes
+  useEffect(() => {
+    if (newScreening.date === today) {
+      setNewScreening(prev => ({
+        ...prev,
+        screeningNumber: getNextScreeningNumber()
+      }));
+    } else {
+      // For other dates, start at 1 or keep manual input
+      setNewScreening(prev => ({
+        ...prev,
+        screeningNumber: prev.screeningNumber || 1
+      }));
+    }
+  }, [newScreening.date, childScreenings]);
   
   // State for pending children
   const [pendingChildren, setPendingChildren] = useState<Partial<ScreenedChild>[]>([]);
@@ -77,6 +105,9 @@ const ChildScreeningPage = () => {
   
   // State for filtering
   const [statusFilter, setStatusFilter] = useState<"all" | "SAM" | "MAM" | "Normal">("all");
+  
+  // State for dialog open/close
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   
   // Handle location update
   const handleLocationUpdate = (latitude: number, longitude: number) => {
@@ -150,7 +181,7 @@ const ChildScreeningPage = () => {
     
     // Add screening with all children
     addChildScreening({
-      date: newScreening.date || new Date().toISOString().slice(0, 10),
+      date: newScreening.date || today,
       villageName: formattedVillageName,
       ucName: formattedUcName,
       userName: newScreening.userName || user?.name || "",
@@ -164,18 +195,25 @@ const ChildScreeningPage = () => {
     
     // Reset form
     setNewScreening({
-      date: new Date().toISOString().slice(0, 10),
+      date: today,
       villageName: "",
       ucName: "",
       userName: user?.name || "",
       userDesignation: user?.role || "",
-      screeningNumber: 1,
+      screeningNumber: getNextScreeningNumber(),
       children: [],
       images: [],
     });
     setPendingChildren([]);
+    setIsDialogOpen(false);
     
     toast.success("Child screening saved successfully");
+  };
+  
+  // Handle date change
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newDate = e.target.value;
+    setNewScreening({ ...newScreening, date: newDate });
   };
   
   // Handle export
@@ -184,7 +222,6 @@ const ChildScreeningPage = () => {
     
     // First filter by date
     if (exportOption === "today") {
-      const today = new Date().toISOString().slice(0, 10);
       dataToExport = childScreenings.filter((screening) => screening.date === today);
     } else if (exportOption === "range") {
       dataToExport = getChildScreeningsByDateRange(
@@ -269,7 +306,7 @@ const ChildScreeningPage = () => {
         </div>
         
         <div className="flex flex-wrap gap-2">
-          <Dialog>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button className="flex items-center gap-2">
                 <Plus size={16} />
@@ -296,7 +333,7 @@ const ChildScreeningPage = () => {
                         type="date"
                         className="pl-10"
                         value={newScreening.date}
-                        onChange={(e) => setNewScreening({ ...newScreening, date: e.target.value })}
+                        onChange={handleDateChange}
                       />
                     </div>
                   </div>
@@ -319,6 +356,7 @@ const ChildScreeningPage = () => {
                       defaultValue={newScreening.villageName}
                       onValueChange={(value) => setNewScreening({ ...newScreening, villageName: value })}
                       placeholder="Enter village name"
+                      autoComplete="off"
                     />
                   </div>
                   
@@ -329,6 +367,7 @@ const ChildScreeningPage = () => {
                       defaultValue={newScreening.ucName}
                       onValueChange={(value) => setNewScreening({ ...newScreening, ucName: value })}
                       placeholder="Enter UC name"
+                      autoComplete="off"
                     />
                   </div>
                 </div>

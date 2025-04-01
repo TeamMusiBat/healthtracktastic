@@ -79,6 +79,15 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
     setOtherAddress("");
     
     toast.success("Child added successfully");
+    
+    // Reset all form input elements to clear autocomplete
+    const formInputs = document.querySelectorAll('input, textarea');
+    formInputs.forEach((input: any) => {
+      if (input.name !== "gender" && input.name !== "belongsToSameUC" && 
+          input.name !== "vaccination" && input.name !== "vaccineDue") {
+        input.value = "";
+      }
+    });
   };
   
   const getMuacClass = () => {
@@ -96,9 +105,11 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
           <Label htmlFor="childName">Name</Label>
           <CamelCaseInput
             id="childName"
+            name="childName"
             placeholder="Child's Full Name"
-            defaultValue={newChild.name}
+            defaultValue=""
             onValueChange={(value) => setNewChild({...newChild, name: value})}
+            autoComplete="off"
           />
         </div>
         
@@ -106,9 +117,11 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
           <Label htmlFor="fatherName">Father Name</Label>
           <CamelCaseInput
             id="fatherName"
+            name="fatherName"
             placeholder="Father's Name"
-            defaultValue={newChild.fatherName}
+            defaultValue=""
             onValueChange={(value) => setNewChild({...newChild, fatherName: value})}
+            autoComplete="off"
           />
         </div>
       </div>
@@ -118,11 +131,13 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
           <Label htmlFor="childAge">Age (Months)</Label>
           <Input
             id="childAge"
+            name="childAge"
             type="number"
             min={0}
             max={60}
-            value={newChild.age}
+            value={newChild.age || ""}
             onChange={(e) => setNewChild({...newChild, age: parseInt(e.target.value) || 0})}
+            autoComplete="off"
           />
         </div>
         
@@ -130,6 +145,7 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
           <Label htmlFor="childGender">Gender</Label>
           <select
             id="childGender"
+            name="childGender"
             className="w-full px-3 py-2 border rounded-md"
             value={newChild.gender}
             onChange={(e) => setNewChild({...newChild, gender: e.target.value as "male" | "female" | "other"})}
@@ -144,11 +160,12 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
           <Label htmlFor="muac">MUAC (cm)</Label>
           <Input
             id="muac"
+            name="muac"
             type="number"
             step="0.1"
             min={0}
             className={getMuacClass()}
-            value={newChild.muac}
+            value={newChild.muac || ""}
             onChange={(e) => {
               const muac = parseFloat(e.target.value) || 0;
               let status: "SAM" | "MAM" | "Normal" = "Normal";
@@ -161,6 +178,7 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
                 status
               });
             }}
+            autoComplete="off"
           />
         </div>
       </div>
@@ -173,27 +191,28 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
           className="flex space-x-4"
         >
           <div className="flex items-center space-x-2">
-            <RadioGroupItem value="complete" id="complete" />
+            <RadioGroupItem value="complete" id="complete" name="vaccination" />
             <Label htmlFor="complete">Complete</Label>
           </div>
           <div className="flex items-center space-x-2">
-            <RadioGroupItem value="partial" id="partial" />
+            <RadioGroupItem value="partial" id="partial" name="vaccination" />
             <Label htmlFor="partial">Partial</Label>
           </div>
           <div className="flex items-center space-x-2">
-            <RadioGroupItem value="none" id="none" />
+            <RadioGroupItem value="none" id="none" name="vaccination" />
             <Label htmlFor="none">None</Label>
           </div>
         </RadioGroup>
-      </div>
-      
-      <div className="flex items-center space-x-2">
-        <Switch
-          id="vaccineDue"
-          checked={newChild.vaccineDue}
-          onCheckedChange={(checked) => setNewChild({...newChild, vaccineDue: checked})}
-        />
-        <Label htmlFor="vaccineDue">Vaccine Due</Label>
+        
+        <div className="flex items-center space-x-2 pt-2">
+          <Switch 
+            id="vaccineDue" 
+            name="vaccineDue"
+            checked={newChild.vaccineDue} 
+            onCheckedChange={(checked) => setNewChild({...newChild, vaccineDue: checked})} 
+          />
+          <Label htmlFor="vaccineDue">Vaccine Due</Label>
+        </div>
       </div>
       
       <div className="space-y-2">
@@ -201,6 +220,7 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
           <Label htmlFor="childBelongsToSameUC">Belongs to Same UC</Label>
           <Switch 
             id="childBelongsToSameUC"
+            name="childBelongsToSameUC"
             checked={newChild.belongsToSameUC}
             onCheckedChange={(checked) => setNewChild({...newChild, belongsToSameUC: checked})}
           />
@@ -211,9 +231,11 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
             <Label htmlFor="childOtherAddress">Specify Location</Label>
             <Input
               id="childOtherAddress"
+              name="childOtherAddress"
               placeholder="Village, UC, Tehsil, District"
               value={otherAddress}
               onChange={(e) => setOtherAddress(e.target.value)}
+              autoComplete="off"
             />
           </div>
         )}
@@ -223,9 +245,11 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
         <Label htmlFor="childRemarks">Remarks</Label>
         <Textarea
           id="childRemarks"
+          name="childRemarks"
           placeholder="Any additional information"
-          value={newChild.remarks}
+          value={newChild.remarks || ""}
           onChange={(e) => setNewChild({...newChild, remarks: e.target.value})}
+          autoComplete="off"
         />
       </div>
       

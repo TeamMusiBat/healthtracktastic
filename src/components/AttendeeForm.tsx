@@ -69,6 +69,14 @@ const AttendeeForm: React.FC<AttendeeFormProps> = ({ onAddAttendee, checkDuplica
     setOtherAddress("");
     
     toast.success("Attendee added successfully");
+
+    // Reset all form input elements to clear autocomplete
+    const formInputs = document.querySelectorAll('input, textarea');
+    formInputs.forEach((input: any) => {
+      if (input.name !== "gender" && input.name !== "belongsToSameUC") {
+        input.value = "";
+      }
+    });
   };
   
   return (
@@ -80,9 +88,11 @@ const AttendeeForm: React.FC<AttendeeFormProps> = ({ onAddAttendee, checkDuplica
           <Label htmlFor="name">Name</Label>
           <CamelCaseInput
             id="name"
+            name="name"
             placeholder="Full Name"
-            defaultValue={newAttendee.name}
+            defaultValue=""
             onValueChange={(value) => setNewAttendee({...newAttendee, name: value})}
+            autoComplete="off"
           />
         </div>
         
@@ -90,9 +100,11 @@ const AttendeeForm: React.FC<AttendeeFormProps> = ({ onAddAttendee, checkDuplica
           <Label htmlFor="fatherHusbandName">Father/Husband Name</Label>
           <CamelCaseInput
             id="fatherHusbandName"
+            name="fatherHusbandName"
             placeholder="Father or Husband Name"
-            defaultValue={newAttendee.fatherHusbandName}
+            defaultValue=""
             onValueChange={(value) => setNewAttendee({...newAttendee, fatherHusbandName: value})}
+            autoComplete="off"
           />
         </div>
       </div>
@@ -102,10 +114,12 @@ const AttendeeForm: React.FC<AttendeeFormProps> = ({ onAddAttendee, checkDuplica
           <Label htmlFor="age">Age</Label>
           <Input
             id="age"
+            name="age"
             type="number"
             min={1}
-            value={newAttendee.age}
+            value={newAttendee.age || ""}
             onChange={(e) => setNewAttendee({...newAttendee, age: parseInt(e.target.value) || 0})}
+            autoComplete="off"
           />
         </div>
         
@@ -113,6 +127,7 @@ const AttendeeForm: React.FC<AttendeeFormProps> = ({ onAddAttendee, checkDuplica
           <Label htmlFor="gender">Gender</Label>
           <select
             id="gender"
+            name="gender"
             className="w-full px-3 py-2 border rounded-md"
             value={newAttendee.gender}
             onChange={(e) => setNewAttendee({...newAttendee, gender: e.target.value as "male" | "female" | "other"})}
@@ -127,21 +142,25 @@ const AttendeeForm: React.FC<AttendeeFormProps> = ({ onAddAttendee, checkDuplica
           <Label htmlFor="underFiveChildren">Under 5 Children</Label>
           <Input
             id="underFiveChildren"
+            name="underFiveChildren"
             type="number"
             min={0}
-            value={newAttendee.underFiveChildren}
+            value={newAttendee.underFiveChildren || ""}
             onChange={(e) => setNewAttendee({...newAttendee, underFiveChildren: parseInt(e.target.value) || 0})}
+            autoComplete="off"
           />
         </div>
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="contactNumber">Contact Number</Label>
+        <Label htmlFor="contactNumber">Contact Number (Optional)</Label>
         <Input
           id="contactNumber"
-          placeholder="Phone number"
-          value={newAttendee.contactNumber}
+          name="contactNumber"
+          placeholder="Phone number (optional)"
+          value={newAttendee.contactNumber || ""}
           onChange={(e) => setNewAttendee({...newAttendee, contactNumber: e.target.value})}
+          autoComplete="off"
         />
       </div>
       
@@ -150,6 +169,7 @@ const AttendeeForm: React.FC<AttendeeFormProps> = ({ onAddAttendee, checkDuplica
           <Label htmlFor="belongsToSameUC">Belongs to Same UC</Label>
           <Switch 
             id="belongsToSameUC"
+            name="belongsToSameUC"
             checked={newAttendee.belongsToSameUC}
             onCheckedChange={(checked) => setNewAttendee({...newAttendee, belongsToSameUC: checked})}
           />
@@ -160,9 +180,11 @@ const AttendeeForm: React.FC<AttendeeFormProps> = ({ onAddAttendee, checkDuplica
             <Label htmlFor="otherAddress">Specify Location</Label>
             <Input
               id="otherAddress"
+              name="otherAddress"
               placeholder="Village, UC, Tehsil, District"
               value={otherAddress}
               onChange={(e) => setOtherAddress(e.target.value)}
+              autoComplete="off"
             />
           </div>
         )}
@@ -172,9 +194,11 @@ const AttendeeForm: React.FC<AttendeeFormProps> = ({ onAddAttendee, checkDuplica
         <Label htmlFor="remarks">Remarks</Label>
         <Textarea
           id="remarks"
+          name="remarks"
           placeholder="Any additional information"
-          value={newAttendee.remarks}
+          value={newAttendee.remarks || ""}
           onChange={(e) => setNewAttendee({...newAttendee, remarks: e.target.value})}
+          autoComplete="off"
         />
       </div>
       

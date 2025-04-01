@@ -18,36 +18,92 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useAuth } from "@/contexts/AuthContext";
+import { useHealthData } from "@/contexts/HealthDataContext";
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const { childScreenings, awarenessSessions } = useHealthData();
   const [selectedPeriod, setSelectedPeriod] = useState("month");
 
-  const screeningData = [
-    { name: "Jan", normal: 400, mam: 240, sam: 60 },
-    { name: "Feb", normal: 300, mam: 139, sam: 45 },
-    { name: "Mar", normal: 200, mam: 140, sam: 40 },
-    { name: "Apr", normal: 278, mam: 100, sam: 30 },
-    { name: "May", normal: 189, mam: 140, sam: 40 },
-    { name: "Jun", normal: 239, mam: 119, sam: 25 },
-    { name: "Jul", normal: 349, mam: 130, sam: 20 },
-  ];
+  // Calculate real stats
+  const totalChildrenScreened = childScreenings.reduce((total, screening) => {
+    return total + screening.children.length;
+  }, 0);
 
-  const attendanceData = [
-    { name: "Jan", attendance: 85 },
-    { name: "Feb", attendance: 78 },
-    { name: "Mar", attendance: 90 },
-    { name: "Apr", attendance: 84 },
-    { name: "May", attendance: 92 },
-    { name: "Jun", attendance: 88 },
-    { name: "Jul", attendance: 95 },
-  ];
+  const totalAwarenessSessions = awarenessSessions.length;
 
-  const nutritionalStatusData = [
-    { name: "Normal", value: 680, color: "#4CAF50" },
-    { name: "MAM", value: 270, color: "#FFC107" },
-    { name: "SAM", value: 120, color: "#F44336" },
-  ];
+  // Calculate attendance rate (average attendees per session)
+  const attendanceRate = awarenessSessions.length > 0 
+    ? Math.round(awarenessSessions.reduce((total, session) => total + session.attendees.length, 0) / awarenessSessions.length) 
+    : 0;
+
+  // Process screening data for charts
+  const processScreeningData = () => {
+    // Group children by month or as needed
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const screeningByMonth = months.map(month => ({
+      name: month,
+      normal: 0,
+      mam: 0,
+      sam: 0
+    }));
+
+    childScreenings.forEach(screening => {
+      const date = new Date(screening.date);
+      const monthIndex = date.getMonth();
+      
+      screening.children.forEach(child => {
+        if (child.status === "Normal") screeningByMonth[monthIndex].normal++;
+        else if (child.status === "MAM") screeningByMonth[monthIndex].mam++;
+        else if (child.status === "SAM") screeningByMonth[monthIndex].sam++;
+      });
+    });
+
+    return screeningByMonth;
+  };
+
+  // Process awareness session data for charts
+  const processSessionsData = () => {
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const sessionsByMonth = months.map(month => ({
+      name: month,
+      sessions: 0,
+      attendees: 0
+    }));
+
+    awarenessSessions.forEach(session => {
+      const date = new Date(session.date);
+      const monthIndex = date.getMonth();
+      
+      sessionsByMonth[monthIndex].sessions++;
+      sessionsByMonth[monthIndex].attendees += session.attendees.length;
+    });
+
+    return sessionsByMonth;
+  };
+
+  // Process nutritional status data for pie chart
+  const processNutritionalData = () => {
+    let normal = 0, mam = 0, sam = 0;
+
+    childScreenings.forEach(screening => {
+      screening.children.forEach(child => {
+        if (child.status === "Normal") normal++;
+        else if (child.status === "MAM") mam++;
+        else if (child.status === "SAM") sam++;
+      });
+    });
+
+    return [
+      { name: "Normal", value: normal, color: "#4CAF50" },
+      { name: "MAM", value: mam, color: "#FFC107" },
+      { name: "SAM", value: sam, color: "#F44336" }
+    ];
+  };
+
+  const screeningData = processScreeningData();
+  const sessionsData = processSessionsData();
+  const nutritionalStatusData = processNutritionalData();
 
   return (
     <div className="space-y-6">
@@ -64,10 +120,7 @@ const Dashboard = () => {
             <CardTitle className="text-sm font-medium">Total Children Screened</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1,248</div>
-            <p className="text-xs text-muted-foreground">
-              +12.5% from previous month
-            </p>
+            <div className="text-2xl font-bold">{totalChildrenScreened}</div>
           </CardContent>
         </Card>
         <Card>
@@ -75,21 +128,15 @@ const Dashboard = () => {
             <CardTitle className="text-sm font-medium">Awareness Sessions</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">42</div>
-            <p className="text-xs text-muted-foreground">
-              +4.2% from previous month
-            </p>
+            <div className="text-2xl font-bold">{totalAwarenessSessions}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Attendance Rate</CardTitle>
+            <CardTitle className="text-sm font-medium">Avg. Attendees per Session</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">89%</div>
-            <p className="text-xs text-muted-foreground">
-              +2.1% from previous month
-            </p>
+            <div className="text-2xl font-bold">{attendanceRate}</div>
           </CardContent>
         </Card>
       </div>
@@ -97,7 +144,7 @@ const Dashboard = () => {
       <Tabs defaultValue="screening" className="space-y-4">
         <TabsList>
           <TabsTrigger value="screening">Screening Data</TabsTrigger>
-          <TabsTrigger value="attendance">Attendance</TabsTrigger>
+          <TabsTrigger value="awareness">Awareness Sessions</TabsTrigger>
           <TabsTrigger value="nutritional">Nutritional Status</TabsTrigger>
         </TabsList>
         <TabsContent value="screening" className="space-y-4">
@@ -122,20 +169,21 @@ const Dashboard = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="attendance" className="space-y-4">
+        <TabsContent value="awareness" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Awareness Session Attendance</CardTitle>
             </CardHeader>
             <CardContent className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={attendanceData}>
+                <BarChart data={sessionsData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="attendance" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="sessions" name="Sessions" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="attendees" name="Attendees" fill="var(--secondary)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>

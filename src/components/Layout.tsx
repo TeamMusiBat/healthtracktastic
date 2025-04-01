@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { 
@@ -77,6 +77,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   // Only allow master and developer to logout
   const canLogout = user?.role === "master" || user?.role === "developer";
 
+  // Get current route label for header
+  const currentPageLabel = filteredNavItems.find(item => isActiveRoute(item.path))?.label || "Track4Health";
+
   return (
     <SidebarProvider defaultOpen={!isMobile}>
       <div className="flex min-h-screen w-full bg-background">
@@ -148,10 +151,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         {/* Main Content Area */}
         <SidebarInset className="p-0">
           <div className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
-            <SidebarTrigger />
+            {isMobile && <SidebarTrigger />}
             <div className="flex-1">
               <h1 className="text-xl font-semibold">
-                {filteredNavItems.find(item => isActiveRoute(item.path))?.label || "Track4Health"}
+                {currentPageLabel}
               </h1>
             </div>
           </div>

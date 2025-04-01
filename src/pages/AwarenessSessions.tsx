@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,18 +41,46 @@ const AwarenessSessions = () => {
     checkDuplicateAttendee 
   } = useHealthData();
   
+  // Get today's date in YYYY-MM-DD format
+  const today = new Date().toISOString().slice(0, 10);
+  
+  // Find the highest session number for today
+  const getNextSessionNumber = () => {
+    const todaySessions = awarenessSessions.filter(session => session.date === today);
+    if (todaySessions.length === 0) return 1;
+    
+    const maxSessionNumber = Math.max(...todaySessions.map(session => session.sessionNumber || 1));
+    return maxSessionNumber + 1;
+  };
+  
   // State for session form
   const [newSession, setNewSession] = useState<Partial<AwarenessSession>>({
-    date: new Date().toISOString().slice(0, 10),
+    date: today,
     villageName: "",
     ucName: "",
     userName: user?.name || "",
     userDesignation: user?.role || "",
-    sessionNumber: 1,
+    sessionNumber: getNextSessionNumber(),
     attendees: [],
     children: [], // Added children array
     images: [],
   });
+  
+  // Update session number when date changes
+  useEffect(() => {
+    if (newSession.date === today) {
+      setNewSession(prev => ({
+        ...prev,
+        sessionNumber: getNextSessionNumber()
+      }));
+    } else {
+      // For other dates, start at 1 or keep manual input
+      setNewSession(prev => ({
+        ...prev,
+        sessionNumber: prev.sessionNumber || 1
+      }));
+    }
+  }, [newSession.date, awarenessSessions]);
   
   // State for bulk attendees
   const [pendingAttendees, setPendingAttendees] = useState<Partial<Attendee>[]>([]);
@@ -61,6 +89,9 @@ const AwarenessSessions = () => {
   const [exportStartDate, setExportStartDate] = useState<Date>(new Date());
   const [exportEndDate, setExportEndDate] = useState<Date>(new Date());
   const [exportOption, setExportOption] = useState<"today" | "range" | "all">("today");
+  
+  // State for dialog open/close
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   
   // Handle location update
   const handleLocationUpdate = (latitude: number, longitude: number) => {
@@ -134,7 +165,7 @@ const AwarenessSessions = () => {
     
     // Add session with all attendees
     addAwarenessSession({
-      date: newSession.date || new Date().toISOString().slice(0, 10),
+      date: newSession.date || today,
       villageName: formattedVillageName,
       ucName: formattedUcName,
       userName: newSession.userName || user?.name || "",
@@ -149,17 +180,18 @@ const AwarenessSessions = () => {
     
     // Reset form
     setNewSession({
-      date: new Date().toISOString().slice(0, 10),
+      date: today,
       villageName: "",
       ucName: "",
       userName: user?.name || "",
       userDesignation: user?.role || "",
-      sessionNumber: 1,
+      sessionNumber: getNextSessionNumber(),
       attendees: [],
       children: [],
       images: [],
     });
     setPendingAttendees([]);
+    setIsDialogOpen(false);
     
     toast.success("Awareness session saved successfully");
   };
@@ -169,7 +201,6 @@ const AwarenessSessions = () => {
     let dataToExport;
     
     if (exportOption === "today") {
-      const today = new Date().toISOString().slice(0, 10);
       dataToExport = awarenessSessions.filter((session) => session.date === today);
     } else if (exportOption === "range") {
       dataToExport = getAwarenessSessionsByDateRange(
@@ -196,6 +227,12 @@ const AwarenessSessions = () => {
     setExportEndDate(end);
   };
   
+  // Handle date change
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newDate = e.target.value;
+    setNewSession({ ...newSession, date: newDate });
+  };
+  
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -207,7 +244,7 @@ const AwarenessSessions = () => {
         </div>
         
         <div className="flex flex-wrap gap-2">
-          <Dialog>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button className="flex items-center gap-2">
                 <Plus size={16} />
@@ -234,7 +271,7 @@ const AwarenessSessions = () => {
                         type="date"
                         className="pl-10"
                         value={newSession.date}
-                        onChange={(e) => setNewSession({ ...newSession, date: e.target.value })}
+                        onChange={handleDateChange}
                       />
                     </div>
                   </div>
@@ -257,6 +294,7 @@ const AwarenessSessions = () => {
                       defaultValue={newSession.villageName}
                       onValueChange={(value) => setNewSession({ ...newSession, villageName: value })}
                       placeholder="Enter village name"
+                      autoComplete="off"
                     />
                   </div>
                   
@@ -267,6 +305,7 @@ const AwarenessSessions = () => {
                       defaultValue={newSession.ucName}
                       onValueChange={(value) => setNewSession({ ...newSession, ucName: value })}
                       placeholder="Enter UC name"
+                      autoComplete="off"
                     />
                   </div>
                 </div>

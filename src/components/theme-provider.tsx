@@ -26,16 +26,16 @@ const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 const generateRandomColor = (isDark: boolean) => {
   if (isDark) {
     // For dark themes, generate darker colors with better contrast
-    const r = Math.floor(Math.random() * 40); // Lower values for darker colors
-    const g = Math.floor(Math.random() * 40);
-    const b = Math.floor(Math.random() * 70);
-    return `rgb(${r}, ${g}, ${b})`;
+    const h = Math.floor(Math.random() * 360); // Hue (any color)
+    const s = Math.floor(Math.random() * 30) + 20; // Saturation (not too gray, not too vivid)
+    const l = Math.floor(Math.random() * 15) + 5; // Lightness (dark but not too dark)
+    return `${h} ${s}% ${l}%`;
   } else {
     // For light themes, generate lighter colors with better contrast
-    const r = Math.floor(Math.random() * 60) + 195; // Higher values for lighter colors
-    const g = Math.floor(Math.random() * 60) + 195;
-    const b = Math.floor(Math.random() * 60) + 195;
-    return `rgb(${r}, ${g}, ${b})`;
+    const h = Math.floor(Math.random() * 360); // Hue (any color)
+    const s = Math.floor(Math.random() * 30) + 10; // Saturation (not too gray, not too vivid)
+    const l = Math.floor(Math.random() * 15) + 80; // Lightness (very light)
+    return `${h} ${s}% ${l}%`;
   }
 };
 
@@ -107,12 +107,14 @@ export function ThemeProvider({
     
     // Update CSS variables based on theme with high contrast text
     if (actualTheme === "dark") {
-      root.style.setProperty('--background', `${backgroundColor}`);
-      root.style.setProperty('--foreground', 'rgb(245, 245, 245)'); // Very light text for dark mode
+      root.style.setProperty('--foreground', 'hsl(0, 0%, 95%)'); // Very light text for dark mode
     } else {
-      root.style.setProperty('--background', `${backgroundColor}`);
-      root.style.setProperty('--foreground', 'rgb(15, 15, 15)'); // Very dark text for light mode
+      root.style.setProperty('--foreground', 'hsl(210, 20%, 10%)'); // Very dark text for light mode
     }
+    
+    // Make sure all form inputs are readable
+    root.style.setProperty('--input-text', actualTheme === 'dark' ? '240 5% 95%' : '240 10% 3.9%');
+    root.style.setProperty('--input-background', actualTheme === 'dark' ? '240 10% 20%' : '0 0% 100%');
     
   }, [theme, randomSeed]);
 

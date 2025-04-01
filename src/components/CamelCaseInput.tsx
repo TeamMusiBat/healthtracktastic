@@ -33,19 +33,23 @@ const CamelCaseInput: React.FC<CamelCaseInputProps> = ({
   };
   
   const handleBlur = () => {
-    if (hasBeenEdited) {
+    if (hasBeenEdited && value.trim() !== "") {
       const formattedValue = toCamelCase(value);
       setValue(formattedValue);
       onValueChange(formattedValue);
       
       // Reset the edit flag, so next time user edits, it will format again
       setHasBeenEdited(false);
+    } else if (value.trim() === "") {
+      // If empty, just pass the empty value
+      onValueChange("");
     }
   };
   
   return (
     <Input
       {...props}
+      autoComplete="off"
       value={value}
       onChange={handleChange}
       onBlur={handleBlur}
