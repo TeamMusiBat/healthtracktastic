@@ -3,16 +3,14 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import CamelCaseInput from "@/components/CamelCaseInput";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Plus } from "lucide-react";
-import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { CamelCaseInput } from "@/components/CamelCaseInput";
 import { Attendee } from "@/contexts/HealthDataContext";
-import { toCamelCase, getDobFromYears } from "@/utils/formatters";
+import { toast } from "sonner";
 
 interface AttendeeFormProps {
-  onAddAttendee: (attendee: Partial<Attendee>) => void;
+  onAddAttendee: (attendee: Attendee) => void;
   checkDuplicate?: (name: string, fatherName: string) => boolean;
 }
 
@@ -32,55 +30,58 @@ const AttendeeForm: React.FC<AttendeeFormProps> = ({ onAddAttendee, checkDuplica
   const [otherAddress, setOtherAddress] = useState<string>("");
   
   const handleAddAttendee = () => {
-    // Validate form
+    // Validation
     if (!newAttendee.name || !newAttendee.fatherHusbandName) {
       toast.error("Name and Father/Husband Name are required");
       return;
     }
     
-    // Format names (camelcase)
-    const formattedName = toCamelCase(newAttendee.name || "");
-    const formattedFatherName = toCamelCase(newAttendee.fatherHusbandName || "");
-    
-    // Check for duplicate if function provided
-    if (checkDuplicate && checkDuplicate(formattedName, formattedFatherName)) {
-      toast.warning("This attendee already exists for this session");
+    if (newAttendee.age <= 0) {
+      toast.error("Age must be greater than 0");
       return;
     }
     
-    // Create new attendee object
-    const attendeeToAdd: Partial<Attendee> = {
-      ...newAttendee,
-      id: Date.now().toString(),
-      name: formattedName,
-      fatherHusbandName: formattedFatherName,
-      dob: newAttendee.age ? getDobFromYears(newAttendee.age) : undefined,
-      address: !newAttendee.belongsToSameUC ? otherAddress : undefined,
+    // Check for duplicates if function is provided
+    if (checkDuplicate && checkDuplicate(newAttendee.name, newAttendee.fatherHusbandName)) {
+      toast.error("This person has already been added");
+      return;
+    }
+    
+    // Create full attendee with all required fields
+    const fullAttendee: Attendee = {
+      id: `attendee-${Date.now()}`,
+      name: newAttendee.name,
+      fatherHusbandName: newAttendee.fatherHusbandName,
+      age: newAttendee.age,
+      gender: newAttendee.gender as "male" | "female" | "other",
+      underFiveChildren: newAttendee.underFiveChildren,
+      contactNumber: newAttendee.contactNumber || "",
+      remarks: newAttendee.remarks || "",
+      belongsToSameUC: newAttendee.belongsToSameUC,
+      otherLocation: !newAttendee.belongsToSameUC ? otherAddress : "",
     };
     
-    // Send to parent component
-    onAddAttendee(attendeeToAdd);
+    onAddAttendee(fullAttendee);
     
-    // Reset form - properly clear inputs
+    // Reset form
     setNewAttendee({...initialAttendeeState});
     setOtherAddress("");
     
-    toast.success("Attendee added");
+    toast.success("Attendee added successfully");
   };
   
   return (
-    <div className="space-y-4">
-      <h5 className="font-medium mb-2">Add Attendee</h5>
+    <div className="space-y-4 p-4 border rounded-lg bg-card">
+      <h3 className="text-lg font-semibold">Add New Attendee</h3>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="name">Name</Label>
           <CamelCaseInput
             id="name"
-            key={`name-${newAttendee.name}`}
-            defaultValue={newAttendee.name}
-            onValueChange={(value) => setNewAttendee({ ...newAttendee, name: value })}
-            placeholder="Enter name"
+            placeholder="Full Name"
+            value={newAttendee.name}
+            onChange={(value) => setNewAttendee({...newAttendee, name: value})}
           />
         </div>
         
@@ -88,102 +89,96 @@ const AttendeeForm: React.FC<AttendeeFormProps> = ({ onAddAttendee, checkDuplica
           <Label htmlFor="fatherHusbandName">Father/Husband Name</Label>
           <CamelCaseInput
             id="fatherHusbandName"
-            key={`father-${newAttendee.fatherHusbandName}`}
-            defaultValue={newAttendee.fatherHusbandName}
-            onValueChange={(value) => setNewAttendee({ ...newAttendee, fatherHusbandName: value })}
-            placeholder="Enter father/husband name"
+            placeholder="Father or Husband Name"
+            value={newAttendee.fatherHusbandName}
+            onChange={(value) => setNewAttendee({...newAttendee, fatherHusbandName: value})}
           />
         </div>
-        
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="age">Age (years)</Label>
+          <Label htmlFor="age">Age</Label>
           <Input
             id="age"
             type="number"
-            value={newAttendee.age || ""}
-            onChange={(e) => setNewAttendee({ ...newAttendee, age: Number(e.target.value) })}
-            placeholder="Enter age"
+            min={1}
+            value={newAttendee.age}
+            onChange={(e) => setNewAttendee({...newAttendee, age: parseInt(e.target.value) || 0})}
           />
         </div>
         
         <div className="space-y-2">
           <Label htmlFor="gender">Gender</Label>
-          <Select
+          <select
+            id="gender"
+            className="w-full px-3 py-2 border rounded-md"
             value={newAttendee.gender}
-            onValueChange={(value: "male" | "female" | "other") => setNewAttendee({ ...newAttendee, gender: value })}
+            onChange={(e) => setNewAttendee({...newAttendee, gender: e.target.value as "male" | "female" | "other"})}
           >
-            <SelectTrigger id="gender">
-              <SelectValue placeholder="Select gender" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="male">Male</SelectItem>
-              <SelectItem value="female">Female</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
-            </SelectContent>
-          </Select>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+          </select>
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="underFiveChildren">Under Five Children</Label>
+          <Label htmlFor="underFiveChildren">Under 5 Children</Label>
           <Input
             id="underFiveChildren"
             type="number"
-            value={newAttendee.underFiveChildren || ""}
-            onChange={(e) => setNewAttendee({ ...newAttendee, underFiveChildren: Number(e.target.value) })}
-            placeholder="Enter number of children under 5"
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="contactNumber">Contact Number (optional)</Label>
-          <Input
-            id="contactNumber"
-            value={newAttendee.contactNumber || ""}
-            onChange={(e) => setNewAttendee({ ...newAttendee, contactNumber: e.target.value })}
-            placeholder="Enter contact number"
-          />
-        </div>
-        
-        <div className="space-y-2 md:col-span-2">
-          <div className="flex items-center space-x-2 mb-2">
-            <Checkbox
-              id="belongsToSameUC"
-              checked={newAttendee.belongsToSameUC}
-              onCheckedChange={(checked) => setNewAttendee({ ...newAttendee, belongsToSameUC: checked as boolean })}
-            />
-            <Label htmlFor="belongsToSameUC">Person belongs to same UC</Label>
-          </div>
-          
-          {!newAttendee.belongsToSameUC && (
-            <div className="space-y-2">
-              <Label htmlFor="otherAddress">Address</Label>
-              <Input
-                id="otherAddress"
-                value={otherAddress}
-                onChange={(e) => setOtherAddress(e.target.value)}
-                placeholder="Enter address"
-              />
-            </div>
-          )}
-        </div>
-        
-        <div className="space-y-2 md:col-span-2">
-          <Label htmlFor="remarks">Remarks (optional)</Label>
-          <Input
-            id="remarks"
-            value={newAttendee.remarks || ""}
-            onChange={(e) => setNewAttendee({ ...newAttendee, remarks: e.target.value })}
-            placeholder="Enter remarks"
+            min={0}
+            value={newAttendee.underFiveChildren}
+            onChange={(e) => setNewAttendee({...newAttendee, underFiveChildren: parseInt(e.target.value) || 0})}
           />
         </div>
       </div>
       
-      <Button
-        onClick={handleAddAttendee}
-        className="flex items-center gap-2"
-      >
-        <Plus size={16} />
-        <span>Add Attendee</span>
+      <div className="space-y-2">
+        <Label htmlFor="contactNumber">Contact Number</Label>
+        <Input
+          id="contactNumber"
+          placeholder="Phone number"
+          value={newAttendee.contactNumber}
+          onChange={(e) => setNewAttendee({...newAttendee, contactNumber: e.target.value})}
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="belongsToSameUC">Belongs to Same UC</Label>
+          <Switch 
+            id="belongsToSameUC"
+            checked={newAttendee.belongsToSameUC}
+            onCheckedChange={(checked) => setNewAttendee({...newAttendee, belongsToSameUC: checked})}
+          />
+        </div>
+        
+        {!newAttendee.belongsToSameUC && (
+          <div className="pt-2">
+            <Label htmlFor="otherAddress">Specify Location</Label>
+            <Input
+              id="otherAddress"
+              placeholder="Village, UC, Tehsil, District"
+              value={otherAddress}
+              onChange={(e) => setOtherAddress(e.target.value)}
+            />
+          </div>
+        )}
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="remarks">Remarks</Label>
+        <Textarea
+          id="remarks"
+          placeholder="Any additional information"
+          value={newAttendee.remarks}
+          onChange={(e) => setNewAttendee({...newAttendee, remarks: e.target.value})}
+        />
+      </div>
+      
+      <Button onClick={handleAddAttendee} className="w-full">
+        Add Attendee
       </Button>
     </div>
   );

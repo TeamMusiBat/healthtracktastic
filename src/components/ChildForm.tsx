@@ -3,16 +3,14 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import CamelCaseInput from "@/components/CamelCaseInput";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Plus } from "lucide-react";
-import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { CamelCaseInput } from "@/components/CamelCaseInput";
 import { ScreenedChild, VaccineStatus } from "@/contexts/HealthDataContext";
-import { toCamelCase, getDobFromMonths, getMuacStatus } from "@/utils/formatters";
+import { toast } from "sonner";
 
 interface ChildFormProps {
-  onAddChild: (child: Partial<ScreenedChild>) => void;
+  onAddChild: (child: ScreenedChild) => void;
   checkDuplicate?: (name: string, fatherName: string) => boolean;
 }
 
@@ -21,93 +19,86 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
     name: "",
     fatherName: "",
     age: 6, // Default to 6 months
-    muac: 12.5, // Default to normal
+    muac: 12.5, // Default MUAC value
     gender: "male",
-    vaccination: "0-Dose",
+    vaccination: "complete",
     vaccineDue: false,
     remarks: "",
-    status: "Normal", // Will be calculated based on MUAC
+    status: "Normal",
     belongsToSameUC: true,
   };
   
-  const [newChild, setNewChild] = useState<Partial<ScreenedChild>>({...initialChildState});
+  const [newChild, setNewChild] = useState<Partial<ScreenedChild>>(initialChildState);
   const [otherAddress, setOtherAddress] = useState<string>("");
   
-  // Handle MUAC change and update status
-  const handleMuacChange = (value: string) => {
-    const muac = parseFloat(value);
-    const status = getMuacStatus(muac);
-    
-    setNewChild({
-      ...newChild,
-      muac,
-      status,
-    });
+  // Function to determine nutritional status based on MUAC
+  const determineStatus = (muac: number) => {
+    if (muac < 11.5) return "SAM";
+    if (muac < 12.5) return "MAM";
+    return "Normal";
+  };
+  
+  // Update status when MUAC changes
+  const handleMuacChange = (muac: number) => {
+    const status = determineStatus(muac);
+    setNewChild({...newChild, muac, status});
   };
   
   const handleAddChild = () => {
-    // Validate form
+    // Validation
     if (!newChild.name || !newChild.fatherName) {
       toast.error("Name and Father Name are required");
       return;
     }
     
-    if (newChild.age! < 6 || newChild.age! > 59) {
-      toast.error("Age must be between 6 and 59 months");
+    if (newChild.age <= 0) {
+      toast.error("Age must be greater than 0");
       return;
     }
     
-    // Format names (camelcase)
-    const formattedName = toCamelCase(newChild.name || "");
-    const formattedFatherName = toCamelCase(newChild.fatherName || "");
-    
-    // Check for duplicate if function provided
-    if (checkDuplicate && checkDuplicate(formattedName, formattedFatherName)) {
-      toast.warning("This child already exists for this screening");
+    // Check for duplicates if function is provided
+    if (checkDuplicate && checkDuplicate(newChild.name, newChild.fatherName)) {
+      toast.error("This child has already been added");
       return;
     }
     
-    // Create new child object
-    const childToAdd: Partial<ScreenedChild> = {
-      ...newChild,
-      id: Date.now().toString(),
-      name: formattedName,
-      fatherName: formattedFatherName,
-      dob: newChild.age ? getDobFromMonths(newChild.age) : undefined,
-      status: getMuacStatus(newChild.muac!),
-      address: !newChild.belongsToSameUC ? otherAddress : undefined,
+    // Create full child with all required fields
+    const fullChild: ScreenedChild = {
+      id: `child-${Date.now()}`,
+      name: newChild.name,
+      fatherName: newChild.fatherName,
+      age: newChild.age,
+      muac: newChild.muac,
+      gender: newChild.gender as "male" | "female" | "other",
+      vaccination: newChild.vaccination as VaccineStatus,
+      vaccineDue: newChild.vaccineDue,
+      remarks: newChild.remarks || "",
+      status: newChild.status as "SAM" | "MAM" | "Normal",
+      belongsToSameUC: newChild.belongsToSameUC,
+      otherLocation: !newChild.belongsToSameUC ? otherAddress : "",
     };
     
-    // Send to parent component
-    onAddChild(childToAdd);
+    onAddChild(fullChild);
     
-    // Reset form - properly clear all inputs
+    // Reset form
     setNewChild({...initialChildState});
     setOtherAddress("");
     
-    toast.success("Child added to screening");
-  };
-  
-  // Get status badge
-  const getStatusBadge = (status: "SAM" | "MAM" | "Normal") => {
-    if (status === "SAM") return <span className="status-badge status-badge-sam">SAM</span>;
-    if (status === "MAM") return <span className="status-badge status-badge-mam">MAM</span>;
-    return <span className="status-badge status-badge-normal">Normal</span>;
+    toast.success("Child added successfully");
   };
   
   return (
-    <div className="space-y-4">
-      <h5 className="font-medium mb-2">Add Child</h5>
+    <div className="space-y-4 p-4 border rounded-lg bg-card">
+      <h3 className="text-lg font-semibold">Add New Child</h3>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="childName">Name</Label>
+          <Label htmlFor="name">Name</Label>
           <CamelCaseInput
-            id="childName"
-            key={`child-name-${newChild.name}`}
-            defaultValue={newChild.name}
-            onValueChange={(value) => setNewChild({ ...newChild, name: value })}
-            placeholder="Enter child name"
+            id="name"
+            placeholder="Child's Full Name"
+            value={newChild.name}
+            onChange={(value) => setNewChild({...newChild, name: value})}
           />
         </div>
         
@@ -115,41 +106,38 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
           <Label htmlFor="fatherName">Father Name</Label>
           <CamelCaseInput
             id="fatherName"
-            key={`father-name-${newChild.fatherName}`}
-            defaultValue={newChild.fatherName}
-            onValueChange={(value) => setNewChild({ ...newChild, fatherName: value })}
-            placeholder="Enter father name"
+            placeholder="Father's Name"
+            value={newChild.fatherName}
+            onChange={(value) => setNewChild({...newChild, fatherName: value})}
           />
         </div>
-        
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="age">Age (months, 6-59)</Label>
+          <Label htmlFor="age">Age (months)</Label>
           <Input
             id="age"
             type="number"
-            min={6}
-            max={59}
-            value={newChild.age || ""}
-            onChange={(e) => setNewChild({ ...newChild, age: Number(e.target.value) })}
-            placeholder="Enter age in months"
+            min={0}
+            max={60}
+            value={newChild.age}
+            onChange={(e) => setNewChild({...newChild, age: parseInt(e.target.value) || 0})}
           />
         </div>
         
         <div className="space-y-2">
           <Label htmlFor="gender">Gender</Label>
-          <Select
+          <select
+            id="gender"
+            className="w-full px-3 py-2 border rounded-md"
             value={newChild.gender}
-            onValueChange={(value: "male" | "female" | "other") => setNewChild({ ...newChild, gender: value })}
+            onChange={(e) => setNewChild({...newChild, gender: e.target.value as "male" | "female" | "other"})}
           >
-            <SelectTrigger id="gender">
-              <SelectValue placeholder="Select gender" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="male">Male</SelectItem>
-              <SelectItem value="female">Female</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
-            </SelectContent>
-          </Select>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+          </select>
         </div>
         
         <div className="space-y-2">
@@ -158,104 +146,83 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
             id="muac"
             type="number"
             step="0.1"
-            value={newChild.muac || ""}
-            onChange={(e) => handleMuacChange(e.target.value)}
-            placeholder="Enter MUAC in cm"
-            className={`border-2 ${
-              newChild.status === "SAM"
-                ? "border-health-sam"
-                : newChild.status === "MAM"
-                ? "border-health-mam"
-                : "border-health-normal"
-            }`}
+            min={9}
+            max={20}
+            value={newChild.muac}
+            onChange={(e) => handleMuacChange(parseFloat(e.target.value) || 12.5)}
           />
-          <div className="flex items-center mt-1 gap-2">
-            <div className="flex-1 text-xs">
-              {newChild.status === "SAM" && (
-                <span className="text-health-sam">SAM: MUAC ≤ 11 cm</span>
-              )}
-              {newChild.status === "MAM" && (
-                <span className="text-health-mam">MAM: MUAC ≤ 12 cm</span>
-              )}
-              {newChild.status === "Normal" && (
-                <span className="text-health-normal">Normal: MUAC {'>'}12 cm</span>
-              )}
-            </div>
-            {getStatusBadge(newChild.status as "SAM" | "MAM" | "Normal")}
+          <div className={`text-xs font-medium mt-1 ${
+            newChild.status === "SAM" ? "text-red-500" : 
+            newChild.status === "MAM" ? "text-amber-500" : 
+            "text-green-500"
+          }`}>
+            Status: {newChild.status}
           </div>
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="vaccination">Vaccination Status</Label>
-          <Select
-            value={newChild.vaccination}
-            onValueChange={(value: VaccineStatus) => setNewChild({ ...newChild, vaccination: value })}
-          >
-            <SelectTrigger id="vaccination">
-              <SelectValue placeholder="Select vaccination status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="0-Dose">0-Dose</SelectItem>
-              <SelectItem value="1st-Dose">1st-Dose</SelectItem>
-              <SelectItem value="2nd-Dose">2nd-Dose</SelectItem>
-              <SelectItem value="3rd-Dose">3rd-Dose</SelectItem>
-              <SelectItem value="MR-1">MR-1</SelectItem>
-              <SelectItem value="MR-2">MR-2</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="space-y-2 flex items-center">
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="vaccineDue"
-              checked={newChild.vaccineDue}
-              onCheckedChange={(checked) => setNewChild({ ...newChild, vaccineDue: checked as boolean })}
-            />
-            <Label htmlFor="vaccineDue">Vaccine Due</Label>
-          </div>
-        </div>
-        
-        <div className="space-y-2 md:col-span-2">
-          <div className="flex items-center space-x-2 mb-2">
-            <Checkbox
-              id="belongsToSameUC"
-              checked={newChild.belongsToSameUC}
-              onCheckedChange={(checked) => setNewChild({ ...newChild, belongsToSameUC: checked as boolean })}
-            />
-            <Label htmlFor="belongsToSameUC">Child belongs to same UC</Label>
-          </div>
-          
-          {!newChild.belongsToSameUC && (
-            <div className="space-y-2">
-              <Label htmlFor="otherAddress">Address</Label>
-              <Input
-                id="otherAddress"
-                value={otherAddress}
-                onChange={(e) => setOtherAddress(e.target.value)}
-                placeholder="Enter address"
-              />
-            </div>
-          )}
-        </div>
-        
-        <div className="space-y-2 md:col-span-2">
-          <Label htmlFor="remarks">Remarks (optional)</Label>
-          <Input
-            id="remarks"
-            value={newChild.remarks || ""}
-            onChange={(e) => setNewChild({ ...newChild, remarks: e.target.value })}
-            placeholder="Enter remarks"
-          />
         </div>
       </div>
       
-      <Button
-        onClick={handleAddChild}
-        className="flex items-center gap-2"
-      >
-        <Plus size={16} />
-        <span>Add Child</span>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="vaccination">Vaccination Status</Label>
+          <select
+            id="vaccination"
+            className="w-full px-3 py-2 border rounded-md"
+            value={newChild.vaccination}
+            onChange={(e) => setNewChild({...newChild, vaccination: e.target.value as VaccineStatus})}
+          >
+            <option value="complete">Complete</option>
+            <option value="partial">Partial</option>
+            <option value="none">None</option>
+          </select>
+        </div>
+        
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="vaccineDue">Vaccine Due</Label>
+            <Switch 
+              id="vaccineDue"
+              checked={newChild.vaccineDue}
+              onCheckedChange={(checked) => setNewChild({...newChild, vaccineDue: checked})}
+            />
+          </div>
+        </div>
+      </div>
+      
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="belongsToSameUC">Belongs to Same UC</Label>
+          <Switch 
+            id="belongsToSameUC"
+            checked={newChild.belongsToSameUC}
+            onCheckedChange={(checked) => setNewChild({...newChild, belongsToSameUC: checked})}
+          />
+        </div>
+        
+        {!newChild.belongsToSameUC && (
+          <div className="pt-2">
+            <Label htmlFor="otherAddress">Specify Location</Label>
+            <Input
+              id="otherAddress"
+              placeholder="Village, UC, Tehsil, District"
+              value={otherAddress}
+              onChange={(e) => setOtherAddress(e.target.value)}
+            />
+          </div>
+        )}
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="remarks">Remarks</Label>
+        <Textarea
+          id="remarks"
+          placeholder="Any additional information"
+          value={newChild.remarks}
+          onChange={(e) => setNewChild({...newChild, remarks: e.target.value})}
+        />
+      </div>
+      
+      <Button onClick={handleAddChild} className="w-full">
+        Add Child
       </Button>
     </div>
   );

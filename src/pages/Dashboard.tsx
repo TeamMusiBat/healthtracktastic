@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,6 +61,11 @@ const Dashboard = () => {
     { name: 'Normal', value: normalCount, color: '#4CAF50' },
   ];
   
+  // Filter to show only real active users
+  const realActiveUsers = activeUsers.filter(user => 
+    user.isOnline && user.id && user.name && user.role
+  );
+  
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -97,7 +103,7 @@ const Dashboard = () => {
       </div>
       
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-500">Total Children Screened</CardTitle>
@@ -157,10 +163,10 @@ const Dashboard = () => {
       
       {/* Charts and Additional Info */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Nutritional Status Chart */}
+        {/* Screening Status Chart */}
         <Card className="col-span-1">
           <CardHeader>
-            <CardTitle>Nutritional Status Distribution</CardTitle>
+            <CardTitle>Child Screening Status</CardTitle>
             <CardDescription>
               Summary of all child screening results
             </CardDescription>
@@ -204,9 +210,9 @@ const Dashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {activeUsers.length > 0 ? (
+            {realActiveUsers.length > 0 ? (
               <div className="space-y-4">
-                {activeUsers.map((activeUser) => (
+                {realActiveUsers.map((activeUser) => (
                   <div 
                     key={activeUser.id}
                     className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-md"
@@ -240,7 +246,7 @@ const Dashboard = () => {
       </div>
       
       {/* Quick Links */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -271,23 +277,6 @@ const Dashboard = () => {
             </p>
             <Link to="/child-screening">
               <Button className="w-full">View Screenings</Button>
-            </Link>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText size={18} />
-              <span>Health Blogs</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              Read health tips and articles
-            </p>
-            <Link to="/blogs">
-              <Button className="w-full">View Blogs</Button>
             </Link>
           </CardContent>
         </Card>

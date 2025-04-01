@@ -1,6 +1,7 @@
 
 import * as React from "react";
 import { createContext, useContext, useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 
 type Theme = "dark" | "light" | "system";
 
@@ -22,6 +23,24 @@ const initialState: ThemeProviderState = {
 
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 
+// Generate random colors for themes
+const generateRandomColor = (isDark: boolean) => {
+  // For dark themes, generate darker colors
+  if (isDark) {
+    // Dark colors have lower RGB values
+    const r = Math.floor(Math.random() * 60);
+    const g = Math.floor(Math.random() * 60);
+    const b = Math.floor(Math.random() * 100);
+    return `rgb(${r}, ${g}, ${b})`;
+  } else {
+    // For light themes, generate lighter colors
+    const r = Math.floor(Math.random() * 100) + 155;
+    const g = Math.floor(Math.random() * 100) + 155;
+    const b = Math.floor(Math.random() * 100) + 155;
+    return `rgb(${r}, ${g}, ${b})`;
+  }
+};
+
 export function ThemeProvider({
   children,
   defaultTheme = "system",
@@ -31,22 +50,37 @@ export function ThemeProvider({
   const [theme, setTheme] = useState<Theme>(
     () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
   );
-
+  
+  const location = useLocation();
+  
+  // Apply theme and random color when theme changes or location changes
   useEffect(() => {
     const root = window.document.documentElement;
     root.classList.remove("light", "dark");
 
+    let actualTheme = theme;
     if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-        .matches
+      actualTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
         ? "dark"
         : "light";
-      root.classList.add(systemTheme);
-      return;
     }
-
-    root.classList.add(theme);
-  }, [theme]);
+    
+    root.classList.add(actualTheme);
+    
+    // Generate and apply random background color
+    const backgroundColor = generateRandomColor(actualTheme === "dark");
+    root.style.setProperty('--random-background', backgroundColor);
+    
+    // Update CSS variables based on theme
+    if (actualTheme === "dark") {
+      root.style.setProperty('--background', `${backgroundColor}`);
+      root.style.setProperty('--foreground', 'rgb(245, 245, 245)');
+    } else {
+      root.style.setProperty('--background', `${backgroundColor}`);
+      root.style.setProperty('--foreground', 'rgb(15, 15, 15)');
+    }
+    
+  }, [theme, location]);
 
   const value = {
     theme,
