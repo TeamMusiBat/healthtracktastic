@@ -27,14 +27,14 @@ const generateRandomColor = (isDark: boolean) => {
   if (isDark) {
     // For dark themes, generate darker colors with better contrast
     const h = Math.floor(Math.random() * 360); // Hue (any color)
-    const s = Math.floor(Math.random() * 30) + 20; // Saturation (not too gray, not too vivid)
-    const l = Math.floor(Math.random() * 15) + 5; // Lightness (dark but not too dark)
+    const s = Math.floor(Math.random() * 20) + 5; // Saturation (low, to avoid excessive coloring)
+    const l = Math.floor(Math.random() * 10) + 5; // Lightness (dark but not too dark)
     return `${h} ${s}% ${l}%`;
   } else {
     // For light themes, generate lighter colors with better contrast
     const h = Math.floor(Math.random() * 360); // Hue (any color)
-    const s = Math.floor(Math.random() * 20) + 5; // Lower saturation for light mode
-    const l = Math.floor(Math.random() * 10) + 90; // Very light for better contrast
+    const s = Math.floor(Math.random() * 15) + 3; // Very low saturation for light mode
+    const l = Math.floor(Math.random() * 5) + 95; // Very light for better contrast
     return `${h} ${s}% ${l}%`;
   }
 };
@@ -98,23 +98,30 @@ export function ThemeProvider({
     
     root.classList.add(actualTheme);
     
-    // Generate and apply random background color
-    const backgroundColor = generateRandomColor(actualTheme === "dark");
-    root.style.setProperty('--random-background', backgroundColor);
-    
-    // Ensure high contrast for text based on theme
-    if (actualTheme === "dark") {
-      root.style.setProperty('--foreground', 'hsl(0, 0%, 95%)'); // Very light text for dark mode
-      root.style.setProperty('--border', 'hsl(240, 3.7%, 25%)'); // Darker border for dark mode
+    // Apply clean white look for system theme (light)
+    if (theme === "system" && actualTheme === "light") {
+      // 99% white clean look
+      root.style.setProperty('--background', 'hsl(0, 0%, 99%)');
+      root.style.setProperty('--card', 'hsl(0, 0%, 100%)');
+      root.style.setProperty('--border', 'hsl(0, 0%, 94%)');
+      root.style.setProperty('--foreground', 'hsl(210, 20%, 10%)'); // Very dark text for contrast
+      root.style.setProperty('--input', 'hsl(0, 0%, 94%)');
+      root.style.setProperty('--muted', 'hsl(210, 10%, 96%)');
+      root.style.setProperty('--muted-foreground', 'hsl(215, 16%, 55%)');
     } else {
-      root.style.setProperty('--foreground', 'hsl(210, 20%, 10%)'); // Very dark text for light mode
-      root.style.setProperty('--border', 'hsl(240, 5.9%, 90%)'); // Light border for light mode
+      // Generate and apply random background color
+      const backgroundColor = generateRandomColor(actualTheme === "dark");
+      root.style.setProperty('--random-background', backgroundColor);
+      root.style.setProperty('--background', 'var(--random-background)');
       
-      // For system (light) theme make it 99% white with clean look
-      if (theme === "system") {
-        root.style.setProperty('--background', 'hsl(0, 0%, 99%)');
-        root.style.setProperty('--card', 'hsl(0, 0%, 100%)');
-        root.style.setProperty('--border', 'hsl(0, 0%, 92%)');
+      // Ensure high contrast for text based on theme
+      if (actualTheme === "dark") {
+        root.style.setProperty('--foreground', 'hsl(0, 0%, 95%)'); // Very light text for dark mode
+        root.style.setProperty('--border', 'hsl(240, 3.7%, 25%)'); // Darker border for dark mode
+        root.style.setProperty('--muted-foreground', 'hsl(217, 15%, 75%)'); // Lighter muted text
+      } else {
+        root.style.setProperty('--foreground', 'hsl(210, 20%, 10%)'); // Very dark text for light mode
+        root.style.setProperty('--border', 'hsl(240, 5.9%, 90%)'); // Light border for light mode
       }
     }
     

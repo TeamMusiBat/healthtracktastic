@@ -18,6 +18,8 @@ export interface ChildData {
   gender: "male" | "female" | "other"; 
   remarks?: string;
   belongsToSameUC?: boolean;
+  conductedBy?: string;
+  designation?: string;
 }
 
 export interface ScreenedChild extends ChildData {
@@ -37,6 +39,10 @@ export interface Attendee {
   address?: string;
   dob?: string;
   belongsToSameUC?: boolean;
+  vaccination?: VaccineStatus;
+  vaccineDue?: boolean;
+  conductedBy?: string;
+  designation?: string;
 }
 
 export interface ScreeningData {

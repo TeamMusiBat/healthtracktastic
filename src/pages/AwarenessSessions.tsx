@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, Calendar, Download, Trash2, Save, Image } from "lucide-react";
+import { Plus, Calendar, Download, Trash2, Save, Image, Edit } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHealthData, AwarenessSession, Attendee } from "@/contexts/HealthDataContext";
 import LocationPicker from "@/components/LocationPicker";
@@ -37,6 +38,8 @@ const AwarenessSessions = () => {
     awarenessSessions, 
     addAwarenessSession, 
     deleteAwarenessSession,
+    updateAwarenessSession,
+    updateChildInSession,
     getAwarenessSessionsByDateRange,
     checkDuplicateAttendee 
   } = useHealthData();
@@ -93,6 +96,10 @@ const AwarenessSessions = () => {
   // State for dialog open/close
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   
+  // State for edit mode
+  const [editingSession, setEditingSession] = useState<AwarenessSession | null>(null);
+  const [editingAttendee, setEditingAttendee] = useState<Attendee | null>(null);
+  
   // Handle location update
   const handleLocationUpdate = (latitude: number, longitude: number) => {
     setNewSession({
@@ -110,7 +117,7 @@ const AwarenessSessions = () => {
   };
   
   // Handle adding a new attendee
-  const handleAddAttendee = (attendee: Partial<Attendee>) => {
+  const handleAddAttendee = (attendee: Attendee) => {
     setPendingAttendees([...pendingAttendees, attendee]);
   };
   
@@ -196,6 +203,29 @@ const AwarenessSessions = () => {
     toast.success("Awareness session saved successfully");
   };
   
+  // Handle edit session
+  const handleEditSession = (session: AwarenessSession) => {
+    // Only developers and masters can edit
+    if (!user || (user.role !== "developer" && user.role !== "master")) {
+      toast.error("You don't have permission to edit sessions");
+      return;
+    }
+    
+    setEditingSession(session);
+    setNewSession({
+      date: session.date,
+      villageName: session.villageName,
+      ucName: session.ucName,
+      userName: session.userName,
+      userDesignation: session.userDesignation,
+      sessionNumber: session.sessionNumber,
+      images: session.images,
+      location: session.location,
+    });
+    setPendingAttendees(session.attendees);
+    setIsDialogOpen(true);
+  };
+  
   // Handle export
   const handleExport = () => {
     let dataToExport;
@@ -233,6 +263,9 @@ const AwarenessSessions = () => {
     setNewSession({ ...newSession, date: newDate });
   };
   
+  // Check if user can edit (developers and masters only)
+  const canEdit = user && (user.role === "developer" || user.role === "master");
+  
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -253,9 +286,9 @@ const AwarenessSessions = () => {
             </DialogTrigger>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Add New Awareness Session</DialogTitle>
+                <DialogTitle>{editingSession ? "Edit Awareness Session" : "Add New Awareness Session"}</DialogTitle>
                 <DialogDescription>
-                  Add session details and attendees
+                  {editingSession ? "Edit session details and attendees" : "Add session details and attendees"}
                 </DialogDescription>
               </DialogHeader>
               
@@ -308,6 +341,28 @@ const AwarenessSessions = () => {
                       autoComplete="off"
                     />
                   </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="userName">Conducted By</Label>
+                    <Input
+                      id="userName"
+                      value={newSession.userName || ""}
+                      onChange={(e) => setNewSession({ ...newSession, userName: e.target.value })}
+                      placeholder="Conductor's full name"
+                      disabled={!canEdit}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="userDesignation">Designation</Label>
+                    <Input
+                      id="userDesignation"
+                      value={newSession.userDesignation || ""}
+                      onChange={(e) => setNewSession({ ...newSession, userDesignation: e.target.value })}
+                      placeholder="Conductor's designation"
+                      disabled={!canEdit}
+                    />
+                  </div>
                 </div>
                 
                 {/* Location and Image Upload */}
@@ -334,6 +389,8 @@ const AwarenessSessions = () => {
                   <AttendeeForm 
                     onAddAttendee={handleAddAttendee}
                     checkDuplicate={checkDuplicate}
+                    userName={newSession.userName}
+                    userDesignation={newSession.userDesignation}
                   />
                 </div>
                 
@@ -354,7 +411,7 @@ const AwarenessSessions = () => {
                   className="flex items-center gap-2"
                 >
                   <Save size={16} />
-                  <span>Save Session</span>
+                  <span>{editingSession ? "Update Session" : "Save Session"}</span>
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -429,10 +486,11 @@ const AwarenessSessions = () => {
         <TabsContent value="list" className="space-y-4">
           {awarenessSessions.length > 0 ? (
             <div className="rounded-md border">
-              <div className="grid grid-cols-7 gap-4 p-4 font-medium border-b">
+              <div className="grid grid-cols-8 gap-4 p-4 font-medium border-b">
                 <div className="col-span-2">Details</div>
                 <div className="col-span-1">Date</div>
                 <div className="col-span-1">Session #</div>
+                <div className="col-span-1">Conducted By</div>
                 <div className="col-span-1">Location</div>
                 <div className="col-span-1">Attendees</div>
                 <div className="col-span-1 text-right">Actions</div>
@@ -440,17 +498,20 @@ const AwarenessSessions = () => {
               
               <div className="divide-y">
                 {awarenessSessions.map((session) => (
-                  <div key={session.id} className="grid grid-cols-7 gap-4 p-4 items-center">
+                  <div key={session.id} className="grid grid-cols-8 gap-4 p-4 items-center">
                     <div className="col-span-2">
                       <p className="font-medium">{session.villageName}</p>
                       <p className="text-sm text-gray-500">UC: {session.ucName}</p>
-                      <p className="text-sm text-gray-500">By: {session.userName}</p>
                     </div>
                     <div className="col-span-1">
                       {formatDate(session.date)}
                     </div>
                     <div className="col-span-1">
                       {session.sessionNumber || 1}
+                    </div>
+                    <div className="col-span-1">
+                      <p className="text-sm">{session.userName}</p>
+                      <p className="text-xs text-gray-500">{session.userDesignation}</p>
                     </div>
                     <div className="col-span-1">
                       {session.location ? (
@@ -470,14 +531,26 @@ const AwarenessSessions = () => {
                       {session.attendees.length}
                     </div>
                     <div className="col-span-1 flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => deleteAwarenessSession(session.id)}
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <Trash2 size={16} />
-                      </Button>
+                      {canEdit && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEditSession(session)}
+                            className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                          >
+                            <Edit size={16} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => deleteAwarenessSession(session.id)}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 size={16} />
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -501,14 +574,26 @@ const AwarenessSessions = () => {
                         <CardTitle>{session.villageName}</CardTitle>
                         <CardDescription>UC: {session.ucName}</CardDescription>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => deleteAwarenessSession(session.id)}
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <Trash2 size={16} />
-                      </Button>
+                      {canEdit && (
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEditSession(session)}
+                            className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 h-8 w-8"
+                          >
+                            <Edit size={14} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => deleteAwarenessSession(session.id)}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8"
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </CardHeader>
                   <CardContent>
@@ -524,6 +609,10 @@ const AwarenessSessions = () => {
                       <div className="flex justify-between items-center">
                         <span className="text-gray-500">Conducted by:</span>
                         <span>{session.userName}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-500">Designation:</span>
+                        <span>{session.userDesignation}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-gray-500">Attendees:</span>
