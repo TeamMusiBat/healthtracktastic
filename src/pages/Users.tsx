@@ -39,11 +39,12 @@ const MOCK_USERS: User[] = [
     name: "Asif Jamali",
     role: "developer",
     isOnline: true,
+    designation: "Developer"
   }
 ];
 
 const Users = () => {
-  const { user } = useAuth();
+  const { user, canAddMasters, canAddUsers, canEditUsers } = useAuth();
   const [users, setUsers] = useState<User[]>(MOCK_USERS);
   const [searchQuery, setSearchQuery] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -56,6 +57,7 @@ const Users = () => {
     email: "",
     phoneNumber: "",
     role: "" as UserRole,
+    designation: "",
   });
   
   // Handle showing developer account based on role
@@ -83,6 +85,23 @@ const Users = () => {
       return;
     }
     
+    // Check permissions for adding master role
+    if (newUser.role === "master" && !canAddMasters) {
+      toast.error("You don't have permission to add a Master user");
+      return;
+    }
+    
+    // Set default designation based on role if not provided
+    let designation = newUser.designation;
+    if (!designation) {
+      switch (newUser.role) {
+        case "master": designation = "Master"; break;
+        case "fmt": designation = "Field Monitoring Team"; break;
+        case "socialMobilizer": designation = "Social Mobilizer"; break;
+        default: designation = newUser.role;
+      }
+    }
+    
     // Add new user
     const newUserObj: User = {
       id: (users.length + 1).toString(),
@@ -92,6 +111,7 @@ const Users = () => {
       phoneNumber: newUser.phoneNumber || undefined,
       role: newUser.role,
       isOnline: false,
+      designation,
     };
     
     setUsers([...users, newUserObj]);
@@ -104,6 +124,7 @@ const Users = () => {
       email: "",
       phoneNumber: "",
       role: "" as UserRole,
+      designation: "",
     });
     
     toast.success("User added successfully");
@@ -140,6 +161,15 @@ const Users = () => {
     }
     return "#";
   };
+  
+  if (!canAddUsers) {
+    return (
+      <div className="flex flex-col items-center justify-center h-96">
+        <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
+        <p className="text-gray-500">You don't have permission to access the User Management page.</p>
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-6">
@@ -179,6 +209,16 @@ const Users = () => {
                   defaultValue={newUser.name}
                   onValueChange={(value) => setNewUser({ ...newUser, name: value })}
                   placeholder="Enter full name"
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="designation">Designation</Label>
+                <CamelCaseInput
+                  id="designation"
+                  defaultValue={newUser.designation}
+                  onValueChange={(value) => setNewUser({ ...newUser, designation: value })}
+                  placeholder="Enter designation"
                 />
               </div>
               
@@ -235,10 +275,7 @@ const Users = () => {
                     <SelectValue placeholder="Select a role" />
                   </SelectTrigger>
                   <SelectContent>
-                    {user?.role === "developer" && (
-                      <SelectItem value="developer">Developer (Full Access)</SelectItem>
-                    )}
-                    {(user?.role === "developer" || user?.role === "master") && (
+                    {canAddMasters && (
                       <SelectItem value="master">Master (User Management)</SelectItem>
                     )}
                     <SelectItem value="fmt">FMT (Field Worker)</SelectItem>
@@ -280,7 +317,7 @@ const Users = () => {
                   </div>
                 </div>
                 <div className="flex items-center">
-                  {(user?.role === "developer" || (user?.role === "master" && (u.role === "fmt" || u.role === "socialMobilizer"))) && u.id !== user?.id && (
+                  {canEditUsers && u.id !== user?.id && (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -302,6 +339,9 @@ const Users = () => {
                   {u.role === "fmt" && "FMT"}
                   {u.role === "socialMobilizer" && "Social Mobilizer"}
                 </div>
+                
+                <div className="text-gray-500">Designation</div>
+                <div className="font-medium">{u.designation || u.role}</div>
                 
                 {u.email && (
                   <>

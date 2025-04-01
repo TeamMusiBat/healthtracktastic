@@ -9,6 +9,11 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import CamelCaseInput from "@/components/CamelCaseInput";
 import { ScreenedChild, VaccineStatus } from "@/contexts/HealthDataContext";
 import { toast } from "sonner";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { CalendarIcon } from "lucide-react";
 
 interface ChildFormProps {
   onAddChild: (child: ScreenedChild) => void;
@@ -22,7 +27,7 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
     age: 0,
     muac: 0,
     gender: "male",
-    vaccination: "complete" as VaccineStatus,
+    vaccination: "0-Dose" as VaccineStatus,
     vaccineDue: false,
     remarks: "",
     status: "Normal",
@@ -31,6 +36,7 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
   
   const [newChild, setNewChild] = useState<Partial<ScreenedChild>>(initialChildState);
   const [otherAddress, setOtherAddress] = useState<string>("");
+  const [selectedDob, setSelectedDob] = useState<Date | undefined>(undefined);
   
   const handleAddChild = () => {
     // Validation
@@ -69,24 +75,26 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
       status: newChild.status as "SAM" | "MAM" | "Normal",
       belongsToSameUC: newChild.belongsToSameUC,
       // Only add otherLocation if belongsToSameUC is false
-      ...((!newChild.belongsToSameUC && otherAddress) ? { otherLocation: otherAddress } : {})
+      ...((!newChild.belongsToSameUC && otherAddress) ? { otherLocation: otherAddress } : {}),
+      // Add DOB if selected
+      ...(selectedDob ? { dob: format(selectedDob, 'dd/MM/yyyy') } : {})
     };
     
     onAddChild(fullChild);
     
-    // Reset form
-    setNewChild({...initialChildState});
-    setOtherAddress("");
+    // Reset only name and father name fields as requested
+    setNewChild({
+      ...newChild,
+      name: "",
+      fatherName: "",
+    });
     
     toast.success("Child added successfully");
     
-    // Reset all form input elements to clear autocomplete
-    const formInputs = document.querySelectorAll('input, textarea');
-    formInputs.forEach((input: any) => {
-      if (input.name !== "gender" && input.name !== "belongsToSameUC" && 
-          input.name !== "vaccination" && input.name !== "vaccineDue") {
-        input.value = "";
-      }
+    // Reset only name and father name input elements to clear autocomplete
+    const nameInputs = document.querySelectorAll('input[name="childName"], input[name="fatherName"]');
+    nameInputs.forEach((input: any) => {
+      input.value = "";
     });
   };
   
@@ -94,6 +102,19 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
     if (newChild.muac < 11.5) return "bg-red-100 border-red-300";
     if (newChild.muac >= 11.5 && newChild.muac < 12.5) return "bg-yellow-100 border-yellow-300";
     return "bg-green-100 border-green-300";
+  };
+
+  const handleDobChange = (date: Date | undefined) => {
+    setSelectedDob(date);
+    if (date) {
+      // Calculate age in months
+      const today = new Date();
+      const birthDate = new Date(date);
+      const months = (today.getFullYear() - birthDate.getFullYear()) * 12 + 
+                    (today.getMonth() - birthDate.getMonth());
+      
+      setNewChild({...newChild, age: months});
+    }
   };
   
   return (
@@ -107,7 +128,7 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
             id="childName"
             name="childName"
             placeholder="Child's Full Name"
-            defaultValue=""
+            defaultValue={newChild.name}
             onValueChange={(value) => setNewChild({...newChild, name: value})}
             autoComplete="off"
           />
@@ -119,7 +140,7 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
             id="fatherName"
             name="fatherName"
             placeholder="Father's Name"
-            defaultValue=""
+            defaultValue={newChild.fatherName}
             onValueChange={(value) => setNewChild({...newChild, fatherName: value})}
             autoComplete="off"
           />
@@ -127,6 +148,34 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="childDob">Date of Birth (Optional)</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !selectedDob && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {selectedDob ? format(selectedDob, "dd/MM/yyyy") : <span>Select DOB</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={selectedDob}
+                onSelect={handleDobChange}
+                initialFocus
+                disabled={(date) => date > new Date()}
+                className="p-3 pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+        
         <div className="space-y-2">
           <Label htmlFor="childAge">Age (Months)</Label>
           <Input
@@ -185,29 +234,25 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
       
       <div className="space-y-2">
         <Label>Vaccination Status</Label>
-        <RadioGroup 
-          value={newChild.vaccination} 
-          onValueChange={(value) => setNewChild({...newChild, vaccination: value as VaccineStatus})}
-          className="flex space-x-4"
+        <select
+          id="vaccinationStatus"
+          name="vaccinationStatus"
+          className="w-full px-3 py-2 border rounded-md"
+          value={newChild.vaccination}
+          onChange={(e) => setNewChild({...newChild, vaccination: e.target.value as VaccineStatus})}
         >
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="complete" id="complete" />
-            <Label htmlFor="complete">Complete</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="partial" id="partial" />
-            <Label htmlFor="partial">Partial</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="none" id="none" />
-            <Label htmlFor="none">None</Label>
-          </div>
-        </RadioGroup>
+          <option value="0-Dose">0-Dose</option>
+          <option value="1st-Dose">1st-Dose</option>
+          <option value="2nd-Dose">2nd-Dose</option>
+          <option value="3rd-Dose">3rd-Dose</option>
+          <option value="MR-1">MR-1</option>
+          <option value="MR-2">MR-2</option>
+          <option value="Completed">Completed</option>
+        </select>
         
         <div className="flex items-center space-x-2 pt-2">
           <Switch 
             id="vaccineDue" 
-            name="vaccineDue"
             checked={newChild.vaccineDue} 
             onCheckedChange={(checked) => setNewChild({...newChild, vaccineDue: checked})} 
           />
@@ -217,10 +262,9 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
       
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label htmlFor="childBelongsToSameUC">Belongs to Same UC</Label>
+          <Label htmlFor="childBelongsToSameUC">Kid Belongs From Same Address</Label>
           <Switch 
             id="childBelongsToSameUC"
-            name="childBelongsToSameUC"
             checked={newChild.belongsToSameUC}
             onCheckedChange={(checked) => setNewChild({...newChild, belongsToSameUC: checked})}
           />

@@ -2,7 +2,7 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 // Define data structures
-export type VaccineStatus = "0-Dose" | "1st-Dose" | "2nd-Dose" | "3rd-Dose" | "MR-1" | "MR-2";
+export type VaccineStatus = "0-Dose" | "1st-Dose" | "2nd-Dose" | "3rd-Dose" | "MR-1" | "MR-2" | "Completed" | "complete" | "partial" | "none";
 
 export interface ChildData {
   id: string;
