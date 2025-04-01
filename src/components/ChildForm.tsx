@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { CamelCaseInput } from "@/components/CamelCaseInput";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import CamelCaseInput from "@/components/CamelCaseInput";
 import { ScreenedChild, VaccineStatus } from "@/contexts/HealthDataContext";
 import { toast } from "sonner";
 
@@ -18,31 +19,18 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
   const initialChildState: Partial<ScreenedChild> = {
     name: "",
     fatherName: "",
-    age: 6, // Default to 6 months
-    muac: 12.5, // Default MUAC value
+    age: 0,
+    muac: 0,
     gender: "male",
-    vaccination: "complete",
+    vaccination: "complete" as VaccineStatus,
     vaccineDue: false,
     remarks: "",
-    status: "Normal",
+    status: "normal",
     belongsToSameUC: true,
   };
   
   const [newChild, setNewChild] = useState<Partial<ScreenedChild>>(initialChildState);
   const [otherAddress, setOtherAddress] = useState<string>("");
-  
-  // Function to determine nutritional status based on MUAC
-  const determineStatus = (muac: number) => {
-    if (muac < 11.5) return "SAM";
-    if (muac < 12.5) return "MAM";
-    return "Normal";
-  };
-  
-  // Update status when MUAC changes
-  const handleMuacChange = (muac: number) => {
-    const status = determineStatus(muac);
-    setNewChild({...newChild, muac, status});
-  };
   
   const handleAddChild = () => {
     // Validation
@@ -53,6 +41,11 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
     
     if (newChild.age <= 0) {
       toast.error("Age must be greater than 0");
+      return;
+    }
+    
+    if (newChild.muac <= 0) {
+      toast.error("MUAC must be greater than 0");
       return;
     }
     
@@ -73,9 +66,10 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
       vaccination: newChild.vaccination as VaccineStatus,
       vaccineDue: newChild.vaccineDue,
       remarks: newChild.remarks || "",
-      status: newChild.status as "SAM" | "MAM" | "Normal",
+      status: newChild.status as "normal" | "mam" | "sam",
       belongsToSameUC: newChild.belongsToSameUC,
-      otherLocation: !newChild.belongsToSameUC ? otherAddress : "",
+      // Only add otherLocation if belongsToSameUC is false
+      ...((!newChild.belongsToSameUC && otherAddress) ? { otherLocation: otherAddress } : {})
     };
     
     onAddChild(fullChild);
@@ -87,18 +81,24 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
     toast.success("Child added successfully");
   };
   
+  const getMuacClass = () => {
+    if (newChild.muac < 11.5) return "bg-red-100 border-red-300";
+    if (newChild.muac >= 11.5 && newChild.muac < 12.5) return "bg-yellow-100 border-yellow-300";
+    return "bg-green-100 border-green-300";
+  };
+  
   return (
     <div className="space-y-4 p-4 border rounded-lg bg-card">
       <h3 className="text-lg font-semibold">Add New Child</h3>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="name">Name</Label>
+          <Label htmlFor="childName">Name</Label>
           <CamelCaseInput
-            id="name"
+            id="childName"
             placeholder="Child's Full Name"
-            value={newChild.name}
-            onChange={(value) => setNewChild({...newChild, name: value})}
+            defaultValue={newChild.name}
+            onValueChange={(value) => setNewChild({...newChild, name: value})}
           />
         </div>
         
@@ -107,17 +107,17 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
           <CamelCaseInput
             id="fatherName"
             placeholder="Father's Name"
-            value={newChild.fatherName}
-            onChange={(value) => setNewChild({...newChild, fatherName: value})}
+            defaultValue={newChild.fatherName}
+            onValueChange={(value) => setNewChild({...newChild, fatherName: value})}
           />
         </div>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="age">Age (months)</Label>
+          <Label htmlFor="childAge">Age (Months)</Label>
           <Input
-            id="age"
+            id="childAge"
             type="number"
             min={0}
             max={60}
@@ -127,9 +127,9 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="gender">Gender</Label>
+          <Label htmlFor="childGender">Gender</Label>
           <select
-            id="gender"
+            id="childGender"
             className="w-full px-3 py-2 border rounded-md"
             value={newChild.gender}
             onChange={(e) => setNewChild({...newChild, gender: e.target.value as "male" | "female" | "other"})}
@@ -146,53 +146,61 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
             id="muac"
             type="number"
             step="0.1"
-            min={9}
-            max={20}
+            min={0}
+            className={getMuacClass()}
             value={newChild.muac}
-            onChange={(e) => handleMuacChange(parseFloat(e.target.value) || 12.5)}
+            onChange={(e) => {
+              const muac = parseFloat(e.target.value) || 0;
+              let status = "normal";
+              if (muac < 11.5) status = "sam";
+              else if (muac < 12.5) status = "mam";
+              
+              setNewChild({
+                ...newChild, 
+                muac, 
+                status: status as "normal" | "mam" | "sam"
+              });
+            }}
           />
-          <div className={`text-xs font-medium mt-1 ${
-            newChild.status === "SAM" ? "text-red-500" : 
-            newChild.status === "MAM" ? "text-amber-500" : 
-            "text-green-500"
-          }`}>
-            Status: {newChild.status}
-          </div>
-        </div>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="vaccination">Vaccination Status</Label>
-          <select
-            id="vaccination"
-            className="w-full px-3 py-2 border rounded-md"
-            value={newChild.vaccination}
-            onChange={(e) => setNewChild({...newChild, vaccination: e.target.value as VaccineStatus})}
-          >
-            <option value="complete">Complete</option>
-            <option value="partial">Partial</option>
-            <option value="none">None</option>
-          </select>
-        </div>
-        
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="vaccineDue">Vaccine Due</Label>
-            <Switch 
-              id="vaccineDue"
-              checked={newChild.vaccineDue}
-              onCheckedChange={(checked) => setNewChild({...newChild, vaccineDue: checked})}
-            />
-          </div>
         </div>
       </div>
       
       <div className="space-y-2">
+        <Label>Vaccination Status</Label>
+        <RadioGroup 
+          value={newChild.vaccination} 
+          onValueChange={(value) => setNewChild({...newChild, vaccination: value as VaccineStatus})}
+          className="flex space-x-4"
+        >
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="complete" id="complete" />
+            <Label htmlFor="complete">Complete</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="partial" id="partial" />
+            <Label htmlFor="partial">Partial</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="none" id="none" />
+            <Label htmlFor="none">None</Label>
+          </div>
+        </RadioGroup>
+      </div>
+      
+      <div className="flex items-center space-x-2">
+        <Switch
+          id="vaccineDue"
+          checked={newChild.vaccineDue}
+          onCheckedChange={(checked) => setNewChild({...newChild, vaccineDue: checked})}
+        />
+        <Label htmlFor="vaccineDue">Vaccine Due</Label>
+      </div>
+      
+      <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label htmlFor="belongsToSameUC">Belongs to Same UC</Label>
+          <Label htmlFor="childBelongsToSameUC">Belongs to Same UC</Label>
           <Switch 
-            id="belongsToSameUC"
+            id="childBelongsToSameUC"
             checked={newChild.belongsToSameUC}
             onCheckedChange={(checked) => setNewChild({...newChild, belongsToSameUC: checked})}
           />
@@ -200,9 +208,9 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
         
         {!newChild.belongsToSameUC && (
           <div className="pt-2">
-            <Label htmlFor="otherAddress">Specify Location</Label>
+            <Label htmlFor="childOtherAddress">Specify Location</Label>
             <Input
-              id="otherAddress"
+              id="childOtherAddress"
               placeholder="Village, UC, Tehsil, District"
               value={otherAddress}
               onChange={(e) => setOtherAddress(e.target.value)}
@@ -212,9 +220,9 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="remarks">Remarks</Label>
+        <Label htmlFor="childRemarks">Remarks</Label>
         <Textarea
-          id="remarks"
+          id="childRemarks"
           placeholder="Any additional information"
           value={newChild.remarks}
           onChange={(e) => setNewChild({...newChild, remarks: e.target.value})}

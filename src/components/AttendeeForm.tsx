@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { CamelCaseInput } from "@/components/CamelCaseInput";
+import CamelCaseInput from "@/components/CamelCaseInput";
 import { Attendee } from "@/contexts/HealthDataContext";
 import { toast } from "sonner";
 
@@ -58,7 +58,8 @@ const AttendeeForm: React.FC<AttendeeFormProps> = ({ onAddAttendee, checkDuplica
       contactNumber: newAttendee.contactNumber || "",
       remarks: newAttendee.remarks || "",
       belongsToSameUC: newAttendee.belongsToSameUC,
-      otherLocation: !newAttendee.belongsToSameUC ? otherAddress : "",
+      // Only add otherLocation if belongsToSameUC is false
+      ...((!newAttendee.belongsToSameUC && otherAddress) ? { otherLocation: otherAddress } : {})
     };
     
     onAddAttendee(fullAttendee);
@@ -80,8 +81,8 @@ const AttendeeForm: React.FC<AttendeeFormProps> = ({ onAddAttendee, checkDuplica
           <CamelCaseInput
             id="name"
             placeholder="Full Name"
-            value={newAttendee.name}
-            onChange={(value) => setNewAttendee({...newAttendee, name: value})}
+            defaultValue={newAttendee.name}
+            onValueChange={(value) => setNewAttendee({...newAttendee, name: value})}
           />
         </div>
         
@@ -90,8 +91,8 @@ const AttendeeForm: React.FC<AttendeeFormProps> = ({ onAddAttendee, checkDuplica
           <CamelCaseInput
             id="fatherHusbandName"
             placeholder="Father or Husband Name"
-            value={newAttendee.fatherHusbandName}
-            onChange={(value) => setNewAttendee({...newAttendee, fatherHusbandName: value})}
+            defaultValue={newAttendee.fatherHusbandName}
+            onValueChange={(value) => setNewAttendee({...newAttendee, fatherHusbandName: value})}
           />
         </div>
       </div>
