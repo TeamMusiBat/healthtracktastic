@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,6 +20,10 @@ interface ChildFormProps {
 }
 
 const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => {
+  // Initialize refs for name and father name fields to be able to reset them
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const fatherInputRef = useRef<HTMLInputElement>(null);
+  
   const initialChildState: Partial<ScreenedChild> = {
     name: "",
     fatherName: "",
@@ -89,13 +92,11 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
       fatherName: "",
     });
     
-    toast.success("Child added successfully");
+    // Clear the actual input elements
+    if (nameInputRef.current) nameInputRef.current.value = "";
+    if (fatherInputRef.current) fatherInputRef.current.value = "";
     
-    // Reset only name and father name input elements to clear autocomplete
-    const nameInputs = document.querySelectorAll('input[name="childName"], input[name="fatherName"]');
-    nameInputs.forEach((input: any) => {
-      input.value = "";
-    });
+    toast.success("Child added successfully");
   };
   
   const getMuacClass = () => {
@@ -131,6 +132,7 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
             defaultValue={newChild.name}
             onValueChange={(value) => setNewChild({...newChild, name: value})}
             autoComplete="off"
+            ref={nameInputRef}
           />
         </div>
         
@@ -143,6 +145,7 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
             defaultValue={newChild.fatherName}
             onValueChange={(value) => setNewChild({...newChild, fatherName: value})}
             autoComplete="off"
+            ref={fatherInputRef}
           />
         </div>
       </div>
