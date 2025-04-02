@@ -37,7 +37,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, user, logout } = useAuth();
   const isMobile = useIsMobile();
   const location = useLocation();
-  const [isHovering, setIsHovering] = useState(false);
   
   const isActiveRoute = (path: string) => {
     return location.pathname === path;
@@ -83,46 +82,27 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   // Get current route label for header
   const currentPageLabel = filteredNavItems.find(item => isActiveRoute(item.path))?.label || "Track4Health";
 
-  // Custom toggle handler for the sidebar
-  const handleToggleSidebar = () => {
-    if (!isMobile) {
-      const sidebarContext = useSidebar();
-      sidebarContext.toggleSidebar();
-    }
-  };
-
   return (
     <SidebarProvider defaultOpen={!isMobile}>
       <div className="flex min-h-screen w-full bg-background">
-        {/* Dynamic Sidebar */}
+        {/* Sidebar with collapsible behavior */}
         <Sidebar 
           variant={isMobile ? "floating" : "sidebar"} 
           collapsible={isMobile ? "offcanvas" : "icon"}
-          className={`transition-all duration-300 ${isHovering && !isMobile ? 'w-64' : ''}`}
-          onMouseEnter={() => !isMobile && setIsHovering(true)}
-          onMouseLeave={() => !isMobile && setIsHovering(false)}
+          className="transition-all duration-300"
         >
           <SidebarHeader className="flex items-center justify-between p-4">
             <Link to="/" className="flex items-center gap-2">
               <div className="flex items-center">
                 <span className="text-xl font-bold">T4H</span>
-                {(isHovering || !isMobile) && (
-                  <span className="ml-2 text-xl font-bold transition-opacity duration-200">Track4Health</span>
-                )}
+                <span className="ml-2 text-xl font-bold transition-opacity duration-200 group-data-[collapsible=icon]:hidden">
+                  Track4Health
+                </span>
               </div>
             </Link>
             <div className="flex items-center gap-2">
               <ModeToggle />
-              {!isMobile && (
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8" 
-                  onClick={handleToggleSidebar}
-                >
-                  {isHovering ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                </Button>
-              )}
+              {!isMobile && <SidebarTrigger />}
             </div>
           </SidebarHeader>
           
@@ -155,7 +135,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               <div className="flex flex-col gap-4">
                 <div className="flex items-center space-x-2 p-3 bg-secondary/20 rounded-md">
                   <User className="h-5 w-5" />
-                  <div className="truncate">
+                  <div className="truncate group-data-[collapsible=icon]:hidden">
                     <p className="text-sm font-medium">{user?.name}</p>
                     <p className="text-xs text-muted-foreground">{user?.role}</p>
                   </div>
@@ -167,7 +147,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                   className="w-full flex items-center justify-center gap-2"
                 >
                   <LogOut className="h-4 w-4" />
-                  {(isHovering || !isMobile) && "Logout"}
+                  <span className="group-data-[collapsible=icon]:hidden">Logout</span>
                 </Button>
               </div>
             </SidebarFooter>
