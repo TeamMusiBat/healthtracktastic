@@ -16,6 +16,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 
 const SIDEBAR_COOKIE_NAME = "sidebar:state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
@@ -413,31 +418,70 @@ SidebarContent.displayName = "SidebarContent"
 
 const SidebarGroup = React.forwardRef<
   HTMLDivElement,
-  React.ComponentProps<"div">
->(({ className, ...props }, ref) => {
+  React.ComponentProps<"div"> & {
+    defaultOpen?: boolean
+    collapsible?: boolean
+  }
+>(({ className, children, defaultOpen = true, collapsible = false, ...props }, ref) => {
+  if (collapsible) {
+    return (
+      <Collapsible defaultOpen={defaultOpen} className={cn("w-full", className)} {...props}>
+        <div
+          ref={ref}
+          data-sidebar="group"
+          className="relative flex w-full min-w-0 flex-col p-2"
+        >
+          {children}
+        </div>
+      </Collapsible>
+    );
+  }
+
   return (
     <div
       ref={ref}
       data-sidebar="group"
       className={cn("relative flex w-full min-w-0 flex-col p-2", className)}
       {...props}
-    />
-  )
+    >
+      {children}
+    </div>
+  );
 })
 SidebarGroup.displayName = "SidebarGroup"
 
 const SidebarGroupLabel = React.forwardRef<
   HTMLDivElement,
-  React.ComponentProps<"div"> & { asChild?: boolean }
->(({ className, asChild = false, ...props }, ref) => {
+  React.ComponentProps<"div"> & { 
+    asChild?: boolean,
+    collapsible?: boolean
+  }
+>(({ className, asChild = false, collapsible = false, ...props }, ref) => {
   const Comp = asChild ? Slot : "div"
+
+  if (collapsible) {
+    return (
+      <CollapsibleTrigger asChild>
+        <Comp
+          ref={ref}
+          data-sidebar="group-label"
+          className={cn(
+            "duration-200 flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 outline-none ring-sidebar-ring transition-[margin,opacity] ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0 cursor-pointer hover:bg-secondary/10",
+            "group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0",
+            className
+          )}
+          {...props}
+        />
+      </CollapsibleTrigger>
+    )
+  }
 
   return (
     <Comp
       ref={ref}
       data-sidebar="group-label"
       className={cn(
-        "duration-200 flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 outline-none ring-sidebar-ring transition-[margin,opa] ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
+        "duration-200 flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 outline-none ring-sidebar-ring transition-[margin,opacity] ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
         "group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0",
         className
       )}
@@ -472,15 +516,32 @@ SidebarGroupAction.displayName = "SidebarGroupAction"
 
 const SidebarGroupContent = React.forwardRef<
   HTMLDivElement,
-  React.ComponentProps<"div">
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    data-sidebar="group-content"
-    className={cn("w-full text-sm", className)}
-    {...props}
-  />
-))
+  React.ComponentProps<"div"> & {
+    collapsible?: boolean
+  }
+>(({ className, collapsible = false, ...props }, ref) => {
+  if (collapsible) {
+    return (
+      <CollapsibleContent>
+        <div
+          ref={ref}
+          data-sidebar="group-content"
+          className={cn("w-full text-sm", className)}
+          {...props}
+        />
+      </CollapsibleContent>
+    )
+  }
+
+  return (
+    <div
+      ref={ref}
+      data-sidebar="group-content"
+      className={cn("w-full text-sm", className)}
+      {...props}
+    />
+  )
+})
 SidebarGroupContent.displayName = "SidebarGroupContent"
 
 const SidebarMenu = React.forwardRef<

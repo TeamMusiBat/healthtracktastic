@@ -9,7 +9,9 @@ import {
   User, 
   LogOut,
   LayoutDashboard,
-  ChevronDown 
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ModeToggle } from "@/components/mode-toggle";
@@ -27,7 +29,8 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarInset
+  SidebarInset,
+  useSidebar
 } from "@/components/ui/sidebar";
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
@@ -80,6 +83,14 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   // Get current route label for header
   const currentPageLabel = filteredNavItems.find(item => isActiveRoute(item.path))?.label || "Track4Health";
 
+  // Custom toggle handler for the sidebar
+  const handleToggleSidebar = () => {
+    if (!isMobile) {
+      const sidebarContext = useSidebar();
+      sidebarContext.toggleSidebar();
+    }
+  };
+
   return (
     <SidebarProvider defaultOpen={!isMobile}>
       <div className="flex min-h-screen w-full bg-background">
@@ -93,9 +104,26 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         >
           <SidebarHeader className="flex items-center justify-between p-4">
             <Link to="/" className="flex items-center gap-2">
-              <h2 className="text-xl font-bold">Track4Health</h2>
+              <div className="flex items-center">
+                <span className="text-xl font-bold">T4H</span>
+                {(isHovering || !isMobile) && (
+                  <span className="ml-2 text-xl font-bold transition-opacity duration-200">Track4Health</span>
+                )}
+              </div>
             </Link>
-            <ModeToggle />
+            <div className="flex items-center gap-2">
+              <ModeToggle />
+              {!isMobile && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8" 
+                  onClick={handleToggleSidebar}
+                >
+                  {isHovering ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                </Button>
+              )}
+            </div>
           </SidebarHeader>
           
           <SidebarContent>
@@ -122,7 +150,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             </SidebarGroup>
           </SidebarContent>
           
-          {isAuthenticated && (
+          {isAuthenticated && canLogout && (
             <SidebarFooter className="p-4 border-t">
               <div className="flex flex-col gap-4">
                 <div className="flex items-center space-x-2 p-3 bg-secondary/20 rounded-md">
@@ -133,16 +161,14 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                   </div>
                 </div>
                 
-                {canLogout && (
-                  <Button 
-                    variant="destructive" 
-                    onClick={logout} 
-                    className="w-full flex items-center justify-center gap-2"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Logout
-                  </Button>
-                )}
+                <Button 
+                  variant="destructive" 
+                  onClick={logout} 
+                  className="w-full flex items-center justify-center gap-2"
+                >
+                  <LogOut className="h-4 w-4" />
+                  {(isHovering || !isMobile) && "Logout"}
+                </Button>
               </div>
             </SidebarFooter>
           )}
