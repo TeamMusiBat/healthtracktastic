@@ -20,6 +20,7 @@ export interface User {
     longitude: number;
   };
   designation?: string;
+  district?: string;
 }
 
 interface AuthContextType {
@@ -32,6 +33,7 @@ interface AuthContextType {
   canAddUsers: boolean;
   canEditUsers: boolean;
   canAddMasters: boolean;
+  canAddDevelopers: boolean;
   canEditData: boolean;
   allowedRoutes: string[];
 }
@@ -57,6 +59,7 @@ const AuthContext = createContext<AuthContextType>({
   canAddUsers: false,
   canEditUsers: false,
   canAddMasters: false,
+  canAddDevelopers: false,
   canEditData: false,
   allowedRoutes: [],
 });
@@ -95,11 +98,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const allowedRoutes = getAllowedRoutes(user.role);
       const currentPath = location.pathname;
       
-      // If user is on a route they don't have access to, redirect to home
+      // If user is on a route they don't have access to, redirect to dashboard or home
       if (!allowedRoutes.some(route => currentPath.startsWith(route)) && 
           !currentPath.startsWith('/login')) {
         toast.error("You don't have permission to access this page");
-        navigate('/');
+        navigate(user.role === "developer" || user.role === "master" ? '/dashboard' : '/');
       }
     }
   }, [location.pathname, user, navigate]);
@@ -113,7 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return ['/dashboard', '/users', '/blogs', '/child-screening', '/awareness-sessions', '/'];
       case "fmt":
       case "socialMobilizer":
-        return ['/', '/blogs', '/child-screening', '/awareness-sessions'];
+        return ['/', '/dashboard', '/blogs', '/child-screening', '/awareness-sessions'];
       default:
         return ['/'];
     }
@@ -215,6 +218,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const canAddUsers = user?.role === "master" || user?.role === "developer";
   const canEditUsers = user?.role === "master" || user?.role === "developer";
   const canAddMasters = user?.role === "developer";
+  const canAddDevelopers = false; // No one can add developers
   const canEditData = user?.role === "master" || user?.role === "developer";
   const allowedRoutes = user ? getAllowedRoutes(user.role) : [];
   
@@ -246,6 +250,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         canAddUsers,
         canEditUsers,
         canAddMasters,
+        canAddDevelopers,
         canEditData,
         allowedRoutes,
       }}

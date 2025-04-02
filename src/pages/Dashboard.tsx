@@ -24,17 +24,29 @@ const Dashboard = () => {
   const { user } = useAuth();
   const { childScreenings, awarenessSessions } = useHealthData();
   const [selectedPeriod, setSelectedPeriod] = useState("month");
+  
+  // Filter data based on user role
+  const isAdminRole = user?.role === "developer" || user?.role === "master";
+  
+  // Filter screenings and sessions based on user role
+  const filteredScreenings = isAdminRole 
+    ? childScreenings 
+    : childScreenings.filter(screening => screening.conductedBy === user?.username);
+    
+  const filteredSessions = isAdminRole
+    ? awarenessSessions
+    : awarenessSessions.filter(session => session.conductedBy === user?.username);
 
-  // Calculate real stats
-  const totalChildrenScreened = childScreenings.reduce((total, screening) => {
+  // Calculate stats based on filtered data
+  const totalChildrenScreened = filteredScreenings.reduce((total, screening) => {
     return total + screening.children.length;
   }, 0);
 
-  const totalAwarenessSessions = awarenessSessions.length;
+  const totalAwarenessSessions = filteredSessions.length;
 
   // Calculate attendance rate (average attendees per session)
-  const attendanceRate = awarenessSessions.length > 0 
-    ? Math.round(awarenessSessions.reduce((total, session) => total + session.attendees.length, 0) / awarenessSessions.length) 
+  const attendanceRate = filteredSessions.length > 0 
+    ? Math.round(filteredSessions.reduce((total, session) => total + session.attendees.length, 0) / filteredSessions.length) 
     : 0;
 
   // Process screening data for charts
@@ -48,7 +60,7 @@ const Dashboard = () => {
       sam: 0
     }));
 
-    childScreenings.forEach(screening => {
+    filteredScreenings.forEach(screening => {
       const date = new Date(screening.date);
       const monthIndex = date.getMonth();
       
@@ -71,7 +83,7 @@ const Dashboard = () => {
       attendees: 0
     }));
 
-    awarenessSessions.forEach(session => {
+    filteredSessions.forEach(session => {
       const date = new Date(session.date);
       const monthIndex = date.getMonth();
       
@@ -86,7 +98,7 @@ const Dashboard = () => {
   const processNutritionalData = () => {
     let normal = 0, mam = 0, sam = 0;
 
-    childScreenings.forEach(screening => {
+    filteredScreenings.forEach(screening => {
       screening.children.forEach(child => {
         if (child.status === "Normal") normal++;
         else if (child.status === "MAM") mam++;
@@ -110,7 +122,9 @@ const Dashboard = () => {
       <div className="flex flex-col space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">Welcome back, {user?.name || "User"}</h1>
         <p className="text-muted-foreground">
-          Track your community health metrics and activities in real-time
+          {isAdminRole 
+            ? "View all health metrics and activities across your team" 
+            : "Track your health monitoring activities and contributions"}
         </p>
       </div>
 
@@ -121,6 +135,9 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalChildrenScreened}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {isAdminRole ? "Across all workers" : "Your screenings"}
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -129,6 +146,9 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalAwarenessSessions}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {isAdminRole ? "Conducted by all workers" : "Your sessions"}
+            </p>
           </CardContent>
         </Card>
         <Card>

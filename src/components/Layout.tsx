@@ -14,7 +14,7 @@ import {
   ChevronRight
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { ModeToggle } from "@/components/mode-toggle";
+import { useWindowSize } from "@/hooks/useWindowSize";
 import { Button } from "@/components/ui/button";
 import {
   SidebarProvider,
@@ -36,6 +36,7 @@ import {
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, user, logout } = useAuth();
   const isMobile = useIsMobile();
+  const { isDesktop } = useWindowSize();
   const location = useLocation();
   
   const isActiveRoute = (path: string) => {
@@ -83,7 +84,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const currentPageLabel = filteredNavItems.find(item => isActiveRoute(item.path))?.label || "Track4Health";
 
   return (
-    <SidebarProvider defaultOpen={!isMobile}>
+    <SidebarProvider defaultOpen={isDesktop}>
       <div className="flex min-h-screen w-full bg-background">
         {/* Sidebar with collapsible behavior */}
         <Sidebar 
@@ -101,8 +102,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               </div>
             </Link>
             <div className="flex items-center gap-2">
-              <ModeToggle />
-              {!isMobile && <SidebarTrigger />}
+              {isDesktop && <SidebarTrigger />}
             </div>
           </SidebarHeader>
           

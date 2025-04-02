@@ -45,7 +45,7 @@ const ProtectedRoute = ({ children, requiredRoles = [] }: { children: React.Reac
   if (requiredRoles.length > 0) {
     // Check if user has required role
     if (!user || !requiredRoles.includes(user.role)) {
-      return <Navigate to="/" />;
+      return <Navigate to="/dashboard" />;
     }
   }
 
@@ -55,11 +55,6 @@ const ProtectedRoute = ({ children, requiredRoles = [] }: { children: React.Reac
 const AppContent = () => {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
-
-  // This will trigger a theme regeneration on route change
-  useEffect(() => {
-    // The theme provider will handle the color change via the popstate event
-  }, [location.pathname]);
 
   return (
     <Layout>

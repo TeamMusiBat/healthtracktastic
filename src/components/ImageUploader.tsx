@@ -4,15 +4,27 @@ import { Button } from '@/components/ui/button';
 import { Camera, Upload, X } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ImageUploaderProps {
   onImagesChange: (images: string[]) => void;
   initialImages?: string[];
+  sessionNumber?: string | number;
 }
 
-const ImageUploader = ({ onImagesChange, initialImages = [] }: ImageUploaderProps) => {
+const ImageUploader = ({ onImagesChange, initialImages = [], sessionNumber = 1 }: ImageUploaderProps) => {
   const [images, setImages] = useState<string[]>(initialImages);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
+  
+  const generateFileName = () => {
+    const username = user?.username || 'unknown';
+    const designation = user?.role || 'unknown';
+    const session = sessionNumber || '0';
+    const randomNum = Math.floor(10000 + Math.random() * 90000); // 5 digit random number
+    
+    return `${username}_${designation}_${session}_${randomNum}`;
+  };
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -42,6 +54,7 @@ const ImageUploader = ({ onImagesChange, initialImages = [] }: ImageUploaderProp
     // Use file input with capture attribute for mobile devices
     if (fileInputRef.current) {
       fileInputRef.current.setAttribute('capture', 'environment');
+      fileInputRef.current.setAttribute('name', generateFileName());
       fileInputRef.current.click();
     }
   };
@@ -50,6 +63,7 @@ const ImageUploader = ({ onImagesChange, initialImages = [] }: ImageUploaderProp
     // Regular file upload without capture attribute
     if (fileInputRef.current) {
       fileInputRef.current.removeAttribute('capture');
+      fileInputRef.current.setAttribute('name', generateFileName());
       fileInputRef.current.click();
     }
   };
@@ -102,7 +116,7 @@ const ImageUploader = ({ onImagesChange, initialImages = [] }: ImageUploaderProp
             <div key={index} className="relative">
               <img 
                 src={image} 
-                alt={`Uploaded ${index + 1}`} 
+                alt={`Uploaded ${generateFileName()}`} 
                 className="w-full h-24 object-cover rounded-md"
               />
               <button
