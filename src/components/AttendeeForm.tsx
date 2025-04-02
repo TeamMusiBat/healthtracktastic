@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import CamelCaseInput from "@/components/CamelCaseInput";
-import { Attendee } from "@/contexts/HealthDataContext";
+import { Attendee, VaccineStatus } from "@/contexts/HealthDataContext";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
