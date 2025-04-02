@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -85,16 +86,18 @@ const ChildForm: React.FC<ChildFormProps> = ({ onAddChild, checkDuplicate }) => 
     
     onAddChild(fullChild);
     
-    // Reset only name and father name fields as requested
+    // Reset form fields
     setNewChild({
-      ...newChild,
-      name: "",
-      fatherName: "",
+      ...initialChildState,
     });
     
     // Clear the actual input elements
     if (nameInputRef.current) nameInputRef.current.value = "";
     if (fatherInputRef.current) fatherInputRef.current.value = "";
+    
+    // Reset other state values
+    setOtherAddress("");
+    setSelectedDob(undefined);
     
     toast.success("Child added successfully");
   };
