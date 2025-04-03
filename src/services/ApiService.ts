@@ -7,6 +7,12 @@ import { toast } from "sonner";
 class ApiService {
   // Base API URL - Updated to use your domain
   private apiBaseUrl = "https://healthbyasif.buylevi.xyz/api";
+  private currentUser: User | null = null;
+  
+  // Method to set the current user
+  setUser(user: User | null): void {
+    this.currentUser = user;
+  }
   
   // Method to handle API requests with error handling
   private async request<T>(url: string, options: RequestInit = {}): Promise<T> {
@@ -138,6 +144,32 @@ class ApiService {
     }
   }
   
+  async addAwarenessSession(session: Omit<AwarenessSession, 'id'>): Promise<string> {
+    try {
+      const result = await this.request<{ success: boolean; id: string }>("awareness_sessions.php", {
+        method: "POST",
+        body: JSON.stringify(session),
+      });
+      return result.id;
+    } catch (error) {
+      console.error("Failed to add awareness session:", error);
+      throw error;
+    }
+  }
+  
+  async deleteAwarenessSession(id: string): Promise<boolean> {
+    try {
+      await this.request("awareness_sessions.php", {
+        method: "DELETE",
+        body: JSON.stringify({ id }),
+      });
+      return true;
+    } catch (error) {
+      console.error("Failed to delete awareness session:", error);
+      return false;
+    }
+  }
+  
   async getChildScreenings(): Promise<ChildScreening[]> {
     try {
       const result = await this.request<{ success: boolean; data: ChildScreening[] }>("screenings.php");
@@ -145,6 +177,32 @@ class ApiService {
     } catch (error) {
       console.error("Failed to fetch child screenings:", error);
       return [];
+    }
+  }
+  
+  async addChildScreening(screening: Omit<ChildScreening, 'id'>): Promise<string> {
+    try {
+      const result = await this.request<{ success: boolean; id: string }>("screenings.php", {
+        method: "POST",
+        body: JSON.stringify(screening),
+      });
+      return result.id;
+    } catch (error) {
+      console.error("Failed to add child screening:", error);
+      throw error;
+    }
+  }
+  
+  async deleteChildScreening(id: string): Promise<boolean> {
+    try {
+      await this.request("screenings.php", {
+        method: "DELETE",
+        body: JSON.stringify({ id }),
+      });
+      return true;
+    } catch (error) {
+      console.error("Failed to delete child screening:", error);
+      return false;
     }
   }
   
