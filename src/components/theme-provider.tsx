@@ -38,7 +38,7 @@ export function ThemeProvider({
     // Always use light mode with consistent colors
     root.classList.add("light");
     
-    // Apply clean white look
+    // Apply clean white look with consistent colors for all pages
     root.style.setProperty('--background', 'hsl(0, 0%, 99%)');
     root.style.setProperty('--card', 'hsl(0, 0%, 100%)');
     root.style.setProperty('--border', 'hsl(0, 0%, 94%)');
@@ -58,6 +58,18 @@ export function ThemeProvider({
     // Ensure that buttons and interactive elements have good contrast
     root.style.setProperty('--primary', '210 100% 45%'); // Slightly darker blue
     root.style.setProperty('--primary-foreground', '0 0% 100%'); // White text on primary
+    
+    // Set the same background and foreground colors for dialogs too
+    root.style.setProperty('--popover', 'hsl(0, 0%, 100%)');
+    root.style.setProperty('--popover-foreground', 'hsl(210, 20%, 10%)');
+    
+    // Make secondary colors consistent
+    root.style.setProperty('--secondary', '210 40% 96.1%');
+    root.style.setProperty('--secondary-foreground', '222.2 47.4% 11.2%');
+    
+    // Ensure accent colors are consistent
+    root.style.setProperty('--accent', '210 40% 96.1%');
+    root.style.setProperty('--accent-foreground', '222.2 47.4% 11.2%');
     
   }, []);
 
