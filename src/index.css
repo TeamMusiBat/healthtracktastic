@@ -5,7 +5,7 @@
 
 @layer base {
   :root {
-    --background: 0 0% 98%;
+    --background: 0 0% 100%;
     --foreground: 210 20% 25%;
 
     --card: 0 0% 100%;
@@ -141,6 +141,16 @@
   /* Dialog and popover backgrounds */
   .dialog-content, .popover-content {
     @apply bg-background text-foreground;
+  }
+  
+  /* Ensure dialogs and modals have proper background */
+  [data-radix-dialog-content], [data-radix-popper-content] {
+    @apply bg-background text-foreground border-border;
+  }
+  
+  /* Fix for select content */
+  [data-radix-select-content] {
+    @apply bg-background text-foreground border-border;
   }
 }
 

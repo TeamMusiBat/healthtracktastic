@@ -39,7 +39,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const { isDesktop } = useWindowSize();
   const location = useLocation();
   const navigate = useNavigate();
-  const [autoCollapse, setAutoCollapse] = useState(false);
+  const [autoCollapse, setAutoCollapse] = useState(true); // Default to collapsed for better UX
   
   // Auto-collapse detection - if user moves mouse away from sidebar
   useEffect(() => {
@@ -50,9 +50,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         
         const sidebarRect = sidebar.getBoundingClientRect();
         // If mouse is far away from sidebar, collapse it
-        if (e.clientX > sidebarRect.right + 100) {
+        if (e.clientX > sidebarRect.right + 50) {
           setAutoCollapse(true);
-        } else if (e.clientX < 50) {
+        } else if (e.clientX < 10) {
           setAutoCollapse(false);
         }
       };
@@ -126,7 +126,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         <Sidebar 
           variant={isMobile ? "floating" : "sidebar"} 
           collapsible={isMobile ? "offcanvas" : "icon"}
-          className="transition-all duration-300"
+          className="transition-all duration-300 border-r"
         >
           <SidebarHeader className="flex items-center justify-between p-4">
             <Link to="/" className="flex items-center gap-2">
@@ -200,8 +200,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         </Sidebar>
         
         {/* Main Content Area */}
-        <SidebarInset className="p-0 flex flex-col">
-          <div className="flex h-16 items-center gap-4 border-b bg-white px-4 md:px-6 shadow-sm">
+        <SidebarInset className="p-0 flex flex-col static">
+          <div className="flex h-16 items-center gap-4 border-b bg-white px-4 md:px-6 shadow-sm sticky top-0 z-10">
             {isMobile && <SidebarTrigger />}
             <div className="flex-1">
               <h1 className="text-xl font-semibold">

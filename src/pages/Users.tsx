@@ -227,18 +227,18 @@ const Users = () => {
   }
   
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6 max-w-6xl mx-auto">
+      <div className="flex justify-between items-center flex-wrap gap-4">
         <h1 className="text-2xl font-bold">User Management</h1>
         
         <Dialog>
           <DialogTrigger asChild>
-            <Button className="flex items-center gap-2">
+            <Button className="flex items-center gap-2 bg-primary text-white">
               <Plus size={16} />
               <span>Add User</span>
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-md bg-white text-foreground">
             <DialogHeader>
               <DialogTitle>Add New User</DialogTitle>
               <DialogDescription>
@@ -248,58 +248,63 @@ const Users = () => {
             
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="username" className="text-foreground">Username</Label>
                 <Input
                   id="username"
                   value={newUser.username}
                   onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
                   placeholder="Enter username"
+                  className="bg-background text-foreground border-border"
                 />
               </div>
               
               <div className="grid gap-2">
-                <Label htmlFor="name">Full Name</Label>
+                <Label htmlFor="name" className="text-foreground">Full Name</Label>
                 <CamelCaseInput
                   id="name"
                   defaultValue={newUser.name}
                   onValueChange={(value) => setNewUser({ ...newUser, name: value })}
                   placeholder="Enter full name"
+                  className="bg-background text-foreground border-border"
                 />
               </div>
               
               <div className="grid gap-2">
-                <Label htmlFor="designation">Designation</Label>
+                <Label htmlFor="designation" className="text-foreground">Designation</Label>
                 <CamelCaseInput
                   id="designation"
                   defaultValue={newUser.designation}
                   onValueChange={(value) => setNewUser({ ...newUser, designation: value })}
                   placeholder="Enter designation"
+                  className="bg-background text-foreground border-border"
                 />
               </div>
               
               <div className="grid gap-2">
-                <Label htmlFor="email">Email (optional)</Label>
+                <Label htmlFor="email" className="text-foreground">Email (optional)</Label>
                 <Input
                   id="email"
                   type="email"
                   value={newUser.email}
                   onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
                   placeholder="Enter email address"
+                  className="bg-background text-foreground border-border"
                 />
               </div>
               
               <div className="grid gap-2">
-                <Label htmlFor="phoneNumber">Phone Number (optional)</Label>
+                <Label htmlFor="phoneNumber" className="text-foreground">Phone Number (optional)</Label>
                 <Input
                   id="phoneNumber"
                   value={newUser.phoneNumber}
                   onChange={(e) => setNewUser({ ...newUser, phoneNumber: e.target.value })}
                   placeholder="Enter phone number"
+                  className="bg-background text-foreground border-border"
                 />
               </div>
               
               <div className="grid gap-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password" className="text-foreground">Password</Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -307,6 +312,7 @@ const Users = () => {
                     value={newUser.password}
                     onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
                     placeholder="Enter password"
+                    className="bg-background text-foreground border-border"
                   />
                   <Button
                     type="button"
@@ -321,15 +327,15 @@ const Users = () => {
               </div>
               
               <div className="grid gap-2">
-                <Label htmlFor="role">Role</Label>
+                <Label htmlFor="role" className="text-foreground">Role</Label>
                 <Select
                   onValueChange={(value: UserRole) => setNewUser({ ...newUser, role: value })}
                   value={newUser.role}
                 >
-                  <SelectTrigger id="role">
+                  <SelectTrigger id="role" className="bg-background text-foreground border-border">
                     <SelectValue placeholder="Select a role" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-background text-foreground border-border">
                     {canAddMasters && (
                       <SelectItem value="master">Master (User Management)</SelectItem>
                     )}
@@ -341,7 +347,7 @@ const Users = () => {
             </div>
             
             <DialogFooter>
-              <Button onClick={handleAddUser}>Add User</Button>
+              <Button onClick={handleAddUser} className="bg-primary text-white">Add User</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -365,7 +371,7 @@ const Users = () => {
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
         <Input
           placeholder="Search users..."
-          className="pl-10"
+          className="pl-10 bg-background text-foreground border-border"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
@@ -374,14 +380,14 @@ const Users = () => {
       {/* Users grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredUsers.map((u) => (
-          <Card key={u.id}>
-            <CardHeader className="pb-2">
+          <Card key={u.id} className="bg-white border-border shadow-sm">
+            <CardHeader className="pb-2 bg-white text-foreground">
               <div className="flex justify-between items-start">
                 <div className="flex items-center gap-2">
-                  <UserCircle size={24} className="text-gray-400" />
+                  <UserCircle size={24} className="text-primary" />
                   <div>
-                    <CardTitle className="text-base">{u.name}</CardTitle>
-                    <CardDescription className="text-xs">@{u.username}</CardDescription>
+                    <CardTitle className="text-base text-foreground">{u.name}</CardTitle>
+                    <CardDescription className="text-xs text-muted-foreground">@{u.username}</CardDescription>
                   </div>
                 </div>
                 <div className="flex items-center">
@@ -398,41 +404,41 @@ const Users = () => {
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="bg-white text-foreground">
               <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="text-gray-500">Role</div>
-                <div className="font-medium">
+                <div className="text-muted-foreground">Role</div>
+                <div className="font-medium text-foreground">
                   {u.role === "developer" && "Developer"}
                   {u.role === "master" && "Master"}
                   {u.role === "fmt" && "FMT"}
                   {u.role === "socialMobilizer" && "Social Mobilizer"}
                 </div>
                 
-                <div className="text-gray-500">Designation</div>
-                <div className="font-medium">{u.designation || u.role}</div>
+                <div className="text-muted-foreground">Designation</div>
+                <div className="font-medium text-foreground">{u.designation || u.role}</div>
                 
                 {u.email && (
                   <>
-                    <div className="text-gray-500">Email</div>
-                    <div className="font-medium">{u.email}</div>
+                    <div className="text-muted-foreground">Email</div>
+                    <div className="font-medium text-foreground">{u.email}</div>
                   </>
                 )}
                 
                 {u.phoneNumber && (
                   <>
-                    <div className="text-gray-500">Phone</div>
-                    <div className="font-medium">{u.phoneNumber}</div>
+                    <div className="text-muted-foreground">Phone</div>
+                    <div className="font-medium text-foreground">{u.phoneNumber}</div>
                   </>
                 )}
                 
-                <div className="text-gray-500">Status</div>
+                <div className="text-muted-foreground">Status</div>
                 <div className="flex items-center">
                   <span
                     className={`w-2 h-2 rounded-full mr-2 ${
                       u.isOnline ? "bg-green-500" : "bg-gray-400"
                     }`}
                   ></span>
-                  <span>{u.isOnline ? "Online" : "Offline"}</span>
+                  <span className="text-foreground">{u.isOnline ? "Online" : "Offline"}</span>
                 </div>
                 
                 {u.isOnline && u.location && (
@@ -441,7 +447,7 @@ const Users = () => {
                       href={getLocationLink(u)} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="text-blue-500 hover:text-blue-700 flex items-center gap-1 text-sm"
+                      className="text-primary hover:text-primary/80 flex items-center gap-1 text-sm"
                     >
                       <MapPin size={14} />
                       <span>Track Location</span>
@@ -455,8 +461,8 @@ const Users = () => {
       </div>
       
       {filteredUsers.length === 0 && (
-        <div className="flex justify-center items-center h-40">
-          <p className="text-gray-500">No users found</p>
+        <div className="flex justify-center items-center h-40 bg-white/50 border border-border rounded-lg">
+          <p className="text-muted-foreground">No users found</p>
         </div>
       )}
     </div>

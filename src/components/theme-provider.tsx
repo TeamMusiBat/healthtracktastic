@@ -39,7 +39,7 @@ export function ThemeProvider({
     root.classList.add("light");
     
     // Set clean white background with blue accent colors
-    root.style.setProperty('--background', 'hsl(0, 0%, 98%)');
+    root.style.setProperty('--background', 'hsl(0, 0%, 100%)');
     root.style.setProperty('--card', 'hsl(0, 0%, 100%)');
     root.style.setProperty('--border', 'hsl(210, 20%, 90%)');
     root.style.setProperty('--foreground', 'hsl(210, 20%, 25%)'); 
@@ -70,8 +70,13 @@ export function ThemeProvider({
     root.style.setProperty('--accent', 'hsl(210, 40%, 96.1%)');
     root.style.setProperty('--accent-foreground', 'hsl(210, 20%, 25%)');
     
+    // Set sidebar colors explicitly for better contrast
+    root.style.setProperty('--sidebar-background', 'hsl(0, 0%, 100%)');
+    root.style.setProperty('--sidebar-foreground', 'hsl(210, 20%, 25%)');
+    root.style.setProperty('--sidebar-border', 'hsl(210, 20%, 90%)');
+    
     // Apply these colors to all components
-    document.querySelectorAll('input, button, select, textarea').forEach(el => {
+    document.querySelectorAll('input, button, select, textarea, dialog, [data-radix-popper-content-wrapper]').forEach(el => {
       el.classList.add('color-override');
     });
   }, []);

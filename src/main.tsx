@@ -9,7 +9,7 @@ import { BrowserRouter } from 'react-router-dom'
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
-      <ThemeProvider defaultTheme="system" storageKey="track4health-theme">
+      <ThemeProvider defaultTheme="light" storageKey="track4health-theme">
         <App />
       </ThemeProvider>
     </BrowserRouter>
