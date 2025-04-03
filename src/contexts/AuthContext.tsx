@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useNavigate, useLocation } from "react-router-dom";
+import ApiService from "@/services/ApiService";
 
 // Define the user roles
 export type UserRole = "developer" | "master" | "fmt" | "socialMobilizer";
@@ -38,16 +39,6 @@ interface AuthContextType {
   allowedRoutes: string[];
 }
 
-// Initial hardcoded developer user
-const DEVELOPER_USER: User = {
-  id: "1",
-  username: "asifjamali83",
-  name: "Asif Jamali",
-  role: "developer",
-  isOnline: true,
-  designation: "Developer"
-};
-
 // Create context with default values
 const AuthContext = createContext<AuthContextType>({
   user: null,
@@ -78,6 +69,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const parsedUser = JSON.parse(storedUser);
         setUser(parsedUser);
+        ApiService.setUser(parsedUser);
         
         // Set up periodic online status
         const interval = setInterval(() => {
@@ -142,62 +134,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   // Login function
   const login = async (username: string, password: string): Promise<boolean> => {
-    // In a real app, this would be an API call, but for this demonstration:
-    if (username === "asifjamali83" && password === "Atifkhan83##") {
-      setUser(DEVELOPER_USER);
-      localStorage.setItem("track4health_user", JSON.stringify(DEVELOPER_USER));
-      return true;
+    try {
+      // Use API service for login
+      const loggedInUser = await ApiService.login(username, password);
+      
+      if (loggedInUser) {
+        setUser(loggedInUser);
+        ApiService.setUser(loggedInUser);
+        localStorage.setItem("track4health_user", JSON.stringify(loggedInUser));
+        return true;
+      }
+      
+      toast.error("Invalid username or password");
+      return false;
+    } catch (error) {
+      console.error("Login error:", error);
+      
+      // Handle offline login with fallback
+      if (!navigator.onLine) {
+        // Check stored credentials
+        const storedUser = localStorage.getItem("track4health_user");
+        if (storedUser) {
+          const parsedUser = JSON.parse(storedUser);
+          
+          // IMPORTANT: This is a very insecure way to handle offline login
+          // In a real app, you would use a more secure approach
+          if (parsedUser.username === username) {
+            // If username matches stored user, allow offline login
+            toast.warning("Working in offline mode. Limited functionality available.");
+            setUser(parsedUser);
+            ApiService.setUser(parsedUser);
+            return true;
+          }
+        }
+      }
+      
+      toast.error("Login failed. Please check your connection and try again.");
+      return false;
     }
-    
-    // Mock master login for demo purposes
-    if (username === "master" && password === "master") {
-      const masterUser: User = {
-        id: "2",
-        username: "master",
-        name: "Master User",
-        role: "master",
-        isOnline: true,
-        lastActive: new Date(),
-        designation: "Master"
-      };
-      setUser(masterUser);
-      localStorage.setItem("track4health_user", JSON.stringify(masterUser));
-      return true;
-    }
-    
-    // Mock FMT user login
-    if (username === "fmt" && password === "fmt") {
-      const fmtUser: User = {
-        id: "3",
-        username: "fmt",
-        name: "FMT User",
-        role: "fmt",
-        isOnline: true,
-        lastActive: new Date(),
-        designation: "Field Monitoring Team"
-      };
-      setUser(fmtUser);
-      localStorage.setItem("track4health_user", JSON.stringify(fmtUser));
-      return true;
-    }
-    
-    // Mock social mobilizer login
-    if (username === "social" && password === "social") {
-      const socialUser: User = {
-        id: "4",
-        username: "social",
-        name: "Social Mobilizer",
-        role: "socialMobilizer",
-        isOnline: true,
-        lastActive: new Date(),
-        designation: "Social Mobilizer"
-      };
-      setUser(socialUser);
-      localStorage.setItem("track4health_user", JSON.stringify(socialUser));
-      return true;
-    }
-    
-    return false;
   };
   
   // Logout function
@@ -205,6 +179,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Only allow master and developer to logout
     if (user && (user.role === "master" || user.role === "developer")) {
       setUser(null);
+      ApiService.setUser(null);
       localStorage.removeItem("track4health_user");
       toast.success("Logged out successfully");
       navigate('/login');
@@ -225,16 +200,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Update location
   const updateLocation = (latitude: number, longitude: number) => {
     if (user) {
-      setUser({
+      const updatedUser = {
         ...user,
         location: { latitude, longitude },
-      });
+      };
+      
+      setUser(updatedUser);
       
       // Store updated user with location
-      localStorage.setItem("track4health_user", JSON.stringify({
-        ...user,
-        location: { latitude, longitude },
-      }));
+      localStorage.setItem("track4health_user", JSON.stringify(updatedUser));
+      
+      // Update location on server if online
+      if (navigator.onLine && user.id) {
+        ApiService.updateLocation(user.id, latitude, longitude)
+          .catch(error => {
+            console.error("Failed to update location on server:", error);
+          });
+      }
     }
   };
   

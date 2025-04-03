@@ -16,8 +16,35 @@ import Blogs from "./pages/Blogs";
 import NotFound from "./pages/NotFound";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { HealthDataProvider } from "./contexts/HealthDataContext";
+import LocationTracker from "./components/LocationTracker";
 
 const queryClient = new QueryClient();
+
+// Network status component
+const NetworkStatus = () => {
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+  
+  if (isOnline) return null;
+  
+  return (
+    <div className="fixed bottom-0 left-0 right-0 bg-red-500 text-white p-2 text-center z-50">
+      You are currently offline. Some features may be limited.
+    </div>
+  );
+};
 
 // Protected route component
 const ProtectedRoute = ({ children, requiredRoles = [] }: { children: React.ReactNode, requiredRoles?: string[] }) => {
@@ -53,11 +80,20 @@ const ProtectedRoute = ({ children, requiredRoles = [] }: { children: React.Reac
 };
 
 const AppContent = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const location = useLocation();
+  
+  // Only show location tracker for authenticated users
+  const showLocationTracker = isAuthenticated && user?.role !== 'developer';
 
   return (
     <Layout>
+      {showLocationTracker && (
+        <div className="fixed top-20 right-4 z-50">
+          <LocationTracker />
+        </div>
+      )}
+      <NetworkStatus />
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />} />

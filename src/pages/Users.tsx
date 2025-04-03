@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -30,22 +30,12 @@ import { toast } from "sonner";
 import { Plus, Search, Trash2, Eye, EyeOff, UserCircle, MapPin } from "lucide-react";
 import { useAuth, User, UserRole } from "@/contexts/AuthContext";
 import CamelCaseInput from "@/components/CamelCaseInput";
-
-// Mock users with only developer user
-const MOCK_USERS: User[] = [
-  {
-    id: "1",
-    username: "asifjamali83",
-    name: "Asif Jamali",
-    role: "developer",
-    isOnline: true,
-    designation: "Developer"
-  }
-];
+import ApiService from "@/services/ApiService";
 
 const Users = () => {
   const { user, canAddMasters, canAddUsers, canEditUsers } = useAuth();
-  const [users, setUsers] = useState<User[]>(MOCK_USERS);
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   
@@ -60,6 +50,33 @@ const Users = () => {
     designation: "",
   });
   
+  // Fetch users on component mount
+  useEffect(() => {
+    const fetchUsers = async () => {
+      setIsLoading(true);
+      try {
+        if (navigator.onLine) {
+          const fetchedUsers = await ApiService.getUsers();
+          setUsers(fetchedUsers);
+        } else {
+          toast.warning("You are offline. User data may not be up to date.");
+          // Try to use cached data if available
+          const cachedUsers = localStorage.getItem("cached_users");
+          if (cachedUsers) {
+            setUsers(JSON.parse(cachedUsers));
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch users:", error);
+        toast.error("Failed to load users. Please try again later.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchUsers();
+  }, []);
+  
   // Handle showing developer account based on role
   const filteredUsers = users.filter((u) => {
     // Only developer can see developer accounts
@@ -72,16 +89,10 @@ const Users = () => {
       u.role.toLowerCase().includes(searchQuery.toLowerCase());
   });
   
-  const handleAddUser = () => {
+  const handleAddUser = async () => {
     // Validate form
     if (!newUser.username || !newUser.name || !newUser.password || !newUser.role) {
       toast.error("Please fill all required fields");
-      return;
-    }
-    
-    // Check if username already exists
-    if (users.some((u) => u.username === newUser.username)) {
-      toast.error("Username already exists");
       return;
     }
     
@@ -102,35 +113,50 @@ const Users = () => {
       }
     }
     
-    // Add new user
-    const newUserObj: User = {
-      id: (users.length + 1).toString(),
-      username: newUser.username,
-      name: newUser.name,
-      email: newUser.email || undefined,
-      phoneNumber: newUser.phoneNumber || undefined,
-      role: newUser.role,
-      isOnline: false,
-      designation,
+    // Update new user data
+    const userData = {
+      ...newUser,
+      designation
     };
     
-    setUsers([...users, newUserObj]);
-    
-    // Reset form
-    setNewUser({
-      username: "",
-      name: "",
-      password: "",
-      email: "",
-      phoneNumber: "",
-      role: "" as UserRole,
-      designation: "",
-    });
-    
-    toast.success("User added successfully");
+    try {
+      // Check if online
+      if (!navigator.onLine) {
+        toast.error("You are offline. Cannot add users while offline.");
+        return;
+      }
+      
+      // Add user via API
+      const success = await ApiService.addUser(userData);
+      
+      if (success) {
+        // Refresh user list
+        const updatedUsers = await ApiService.getUsers();
+        setUsers(updatedUsers);
+        
+        // Update cache
+        localStorage.setItem("cached_users", JSON.stringify(updatedUsers));
+        
+        // Reset form
+        setNewUser({
+          username: "",
+          name: "",
+          password: "",
+          email: "",
+          phoneNumber: "",
+          role: "" as UserRole,
+          designation: "",
+        });
+        
+        toast.success("User added successfully");
+      }
+    } catch (error) {
+      console.error("Add user error:", error);
+      toast.error("Failed to add user. Please try again.");
+    }
   };
   
-  const handleDeleteUser = (userId: string) => {
+  const handleDeleteUser = async (userId: string) => {
     // Prevent deleting your own account
     if (userId === user?.id) {
       toast.error("You cannot delete your own account");
@@ -146,9 +172,30 @@ const Users = () => {
       }
     }
     
-    // Delete user
-    setUsers(users.filter((u) => u.id !== userId));
-    toast.success("User deleted successfully");
+    try {
+      // Check if online
+      if (!navigator.onLine) {
+        toast.error("You are offline. Cannot delete users while offline.");
+        return;
+      }
+      
+      // Delete user via API
+      const success = await ApiService.deleteUser(userId);
+      
+      if (success) {
+        // Update local state
+        const updatedUsers = users.filter((u) => u.id !== userId);
+        setUsers(updatedUsers);
+        
+        // Update cache
+        localStorage.setItem("cached_users", JSON.stringify(updatedUsers));
+        
+        toast.success("User deleted successfully");
+      }
+    } catch (error) {
+      console.error("Delete user error:", error);
+      toast.error("Failed to delete user. Please try again.");
+    }
   };
   
   const toggleShowPassword = () => {
@@ -167,6 +214,14 @@ const Users = () => {
       <div className="flex flex-col items-center justify-center h-96">
         <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
         <p className="text-gray-500">You don't have permission to access the User Management page.</p>
+      </div>
+    );
+  }
+  
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-96">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -291,6 +346,19 @@ const Users = () => {
           </DialogContent>
         </Dialog>
       </div>
+      
+      {/* Network status warning */}
+      {!navigator.onLine && (
+        <div className="bg-amber-100 border border-amber-300 text-amber-800 px-4 py-3 rounded mb-4">
+          <div className="flex">
+            <div className="py-1 mr-2">⚠️</div>
+            <div>
+              <p className="font-medium">You are offline</p>
+              <p className="text-sm">User management features are limited while offline.</p>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Search bar */}
       <div className="relative">

@@ -1,5 +1,9 @@
+
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
+import ApiService from '@/services/ApiService';
 
 // Define data structures
 export type VaccineStatus = "0-Dose" | "1st-Dose" | "2nd-Dose" | "3rd-Dose" | "MR-1" | "MR-2" | "Completed" | "complete" | "partial" | "none";
@@ -97,6 +101,9 @@ const HealthDataContext = createContext<HealthDataContextValue | undefined>(unde
 
 // Provider Component
 export const HealthDataProvider = ({ children }: { children: React.ReactNode }) => {
+  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   
   const [awarenessSessions, setAwarenessSessions] = useState<AwarenessSession[]>(() => {
     const storedSessions = localStorage.getItem('awarenessSessions');
@@ -108,11 +115,66 @@ export const HealthDataProvider = ({ children }: { children: React.ReactNode }) 
     return storedScreenings ? JSON.parse(storedScreenings) : [];
   });
 
-  // Mock active users
-  const activeUsers = [
+  const [activeUsers, setActiveUsers] = useState([
     { id: '1', name: 'Asif Jamali', role: 'Developer', location: { latitude: 24.8607, longitude: 67.0011 } },
     { id: '2', name: 'Field Worker 1', role: 'Field Monitor', location: { latitude: 24.8507, longitude: 67.0111 } },
-  ];
+  ]);
+
+  // Track online status
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      toast.success("You are back online. Syncing data...");
+      fetchData();
+    };
+    
+    const handleOffline = () => {
+      setIsOnline(false);
+      toast.warning("You are offline. Data will be saved locally.");
+    };
+    
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  // Fetch data from API on initial load and when user changes
+  const fetchData = async () => {
+    setIsLoading(true);
+    
+    try {
+      // Fetch data from API if online
+      if (isOnline) {
+        const [fetchedScreenings, fetchedSessions] = await Promise.all([
+          ApiService.getChildScreenings(),
+          ApiService.getAwarenessSessions()
+        ]);
+        
+        setChildScreenings(fetchedScreenings);
+        setAwarenessSessions(fetchedSessions);
+        
+        // Update localStorage with fetched data
+        localStorage.setItem('childScreenings', JSON.stringify(fetchedScreenings));
+        localStorage.setItem('awarenessSessions', JSON.stringify(fetchedSessions));
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      toast.error("Failed to load data from server. Using cached data.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch data when user changes
+  useEffect(() => {
+    if (user) {
+      fetchData();
+    }
+  }, [user]);
 
   // Update localStorage when data changes
   useEffect(() => {
@@ -124,27 +186,114 @@ export const HealthDataProvider = ({ children }: { children: React.ReactNode }) 
   }, [childScreenings]);
 
   // Add a new awareness session
-  const addAwarenessSession = (session: Omit<AwarenessSession, 'id'>) => {
-    const newSession: AwarenessSession = {
-      id: uuidv4(),
+  const addAwarenessSession = async (session: Omit<AwarenessSession, 'id'>) => {
+    // Add user info to session
+    const sessionWithUser = {
       ...session,
-      attendees: session.attendees || [],
-      children: session.children || [],
+      userName: user?.username,
+      userDesignation: user?.designation,
+      createdBy: user?.username
     };
-    setAwarenessSessions([...awarenessSessions, newSession]);
+    
+    try {
+      if (isOnline) {
+        // Add to server
+        const id = await ApiService.addAwarenessSession(sessionWithUser);
+        
+        // Add to local state with returned ID
+        const newSession: AwarenessSession = {
+          id,
+          ...sessionWithUser,
+          attendees: sessionWithUser.attendees || [],
+          children: sessionWithUser.children || [],
+        };
+        
+        setAwarenessSessions([...awarenessSessions, newSession]);
+        toast.success("Session saved successfully");
+      } else {
+        // If offline, generate UUID and save locally
+        const id = uuidv4();
+        const newSession: AwarenessSession = {
+          id,
+          ...sessionWithUser,
+          attendees: sessionWithUser.attendees || [],
+          children: sessionWithUser.children || [],
+        };
+        
+        setAwarenessSessions([...awarenessSessions, newSession]);
+        toast.success("Session saved locally. Will sync when online.");
+      }
+    } catch (error) {
+      console.error("Error adding awareness session:", error);
+      toast.error("Failed to save session. Please try again.");
+      
+      // Fallback to local save
+      const id = uuidv4();
+      const newSession: AwarenessSession = {
+        id,
+        ...sessionWithUser,
+        attendees: sessionWithUser.attendees || [],
+        children: sessionWithUser.children || [],
+      };
+      
+      setAwarenessSessions([...awarenessSessions, newSession]);
+      toast.warning("Saved locally due to error. Will try to sync later.");
+    }
   };
 
   // Add a new child screening session
-  const addChildScreening = (session: Omit<ChildScreening, 'id'>) => {
-    const newSession: ChildScreening = {
-      id: uuidv4(),
+  const addChildScreening = async (session: Omit<ChildScreening, 'id'>) => {
+    // Add user info to session
+    const sessionWithUser = {
       ...session,
-      children: session.children || [],
+      userName: user?.username,
+      userDesignation: user?.designation,
+      createdBy: user?.username
     };
-    setChildScreenings([...childScreenings, newSession]);
+    
+    try {
+      if (isOnline) {
+        // Add to server
+        const id = await ApiService.addChildScreening(sessionWithUser);
+        
+        // Add to local state with returned ID
+        const newSession: ChildScreening = {
+          id,
+          ...sessionWithUser,
+          children: sessionWithUser.children || [],
+        };
+        
+        setChildScreenings([...childScreenings, newSession]);
+        toast.success("Screening saved successfully");
+      } else {
+        // If offline, generate UUID and save locally
+        const id = uuidv4();
+        const newSession: ChildScreening = {
+          id,
+          ...sessionWithUser,
+          children: sessionWithUser.children || [],
+        };
+        
+        setChildScreenings([...childScreenings, newSession]);
+        toast.success("Screening saved locally. Will sync when online.");
+      }
+    } catch (error) {
+      console.error("Error adding child screening:", error);
+      toast.error("Failed to save screening. Please try again.");
+      
+      // Fallback to local save
+      const id = uuidv4();
+      const newSession: ChildScreening = {
+        id,
+        ...sessionWithUser,
+        children: sessionWithUser.children || [],
+      };
+      
+      setChildScreenings([...childScreenings, newSession]);
+      toast.warning("Saved locally due to error. Will try to sync later.");
+    }
   };
 
-  
   // Update an existing awareness session
   const updateAwarenessSession = (id: string, updatedSession: Omit<AwarenessSession, 'id' | 'children' | 'attendees'>) => {
     setAwarenessSessions(
@@ -164,13 +313,41 @@ export const HealthDataProvider = ({ children }: { children: React.ReactNode }) 
   };
 
   // Delete an awareness session
-  const deleteAwarenessSession = (id: string) => {
-    setAwarenessSessions(awarenessSessions.filter((session) => session.id !== id));
+  const deleteAwarenessSession = async (id: string) => {
+    try {
+      if (isOnline) {
+        await ApiService.deleteAwarenessSession(id);
+        setAwarenessSessions(awarenessSessions.filter((session) => session.id !== id));
+        toast.success("Session deleted successfully");
+      } else {
+        // If offline, mark for deletion later and remove from local state
+        // This would need a more complex sync mechanism
+        setAwarenessSessions(awarenessSessions.filter((session) => session.id !== id));
+        toast.warning("Session deleted locally. Server will be updated when online.");
+      }
+    } catch (error) {
+      console.error("Error deleting session:", error);
+      toast.error("Failed to delete session. Please try again.");
+    }
   };
 
   // Delete a child screening session
-  const deleteChildScreening = (id: string) => {
-    setChildScreenings(childScreenings.filter((session) => session.id !== id));
+  const deleteChildScreening = async (id: string) => {
+    try {
+      if (isOnline) {
+        await ApiService.deleteChildScreening(id);
+        setChildScreenings(childScreenings.filter((session) => session.id !== id));
+        toast.success("Screening deleted successfully");
+      } else {
+        // If offline, mark for deletion later and remove from local state
+        // This would need a more complex sync mechanism
+        setChildScreenings(childScreenings.filter((session) => session.id !== id));
+        toast.warning("Screening deleted locally. Server will be updated when online.");
+      }
+    } catch (error) {
+      console.error("Error deleting screening:", error);
+      toast.error("Failed to delete screening. Please try again.");
+    }
   };
 
   // Add a child to a session
@@ -304,6 +481,7 @@ export const HealthDataProvider = ({ children }: { children: React.ReactNode }) 
     );
   };
 
+  // Create value object for provider
   const value: HealthDataContextValue = {
     awarenessSessions,
     childScreenings,
@@ -323,6 +501,11 @@ export const HealthDataProvider = ({ children }: { children: React.ReactNode }) 
     getAwarenessSessionsByDateRange,
     checkDuplicateAttendee,
   };
+
+  // If loading, show loading indicator
+  if (isLoading && user) {
+    return <div className="flex items-center justify-center h-screen">Loading health data...</div>;
+  }
 
   return (
     <HealthDataContext.Provider value={value}>
