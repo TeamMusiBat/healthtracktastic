@@ -38,6 +38,7 @@ const Users = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false);
   
   // State for new user form
   const [newUser, setNewUser] = useState({
@@ -148,6 +149,9 @@ const Users = () => {
           designation: "",
         });
         
+        // Close dialog
+        setIsAddUserDialogOpen(false);
+        
         toast.success("User added successfully");
       }
     } catch (error) {
@@ -227,13 +231,13 @@ const Users = () => {
   }
   
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
+    <div className="space-y-6 max-w-6xl mx-auto bg-white p-6 rounded-xl shadow-xl">
       <div className="flex justify-between items-center flex-wrap gap-4">
         <h1 className="text-2xl font-bold">User Management</h1>
         
-        <Dialog>
+        <Dialog open={isAddUserDialogOpen} onOpenChange={setIsAddUserDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="flex items-center gap-2 bg-primary text-white">
+            <Button variant="3d" className="flex items-center gap-2 bg-primary text-white border-b-4 border-primary/60 hover:shadow-xl">
               <Plus size={16} />
               <span>Add User</span>
             </Button>
@@ -347,7 +351,13 @@ const Users = () => {
             </div>
             
             <DialogFooter>
-              <Button onClick={handleAddUser} className="bg-primary text-white">Add User</Button>
+              <Button 
+                onClick={handleAddUser} 
+                variant="3d" 
+                className="bg-primary text-white border-b-4 border-primary/60"
+              >
+                Add User
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -355,7 +365,7 @@ const Users = () => {
       
       {/* Network status warning */}
       {!navigator.onLine && (
-        <div className="bg-amber-100 border border-amber-300 text-amber-800 px-4 py-3 rounded mb-4">
+        <div className="bg-amber-100 border border-amber-300 text-amber-800 px-4 py-3 rounded mb-4 shadow">
           <div className="flex">
             <div className="py-1 mr-2">⚠️</div>
             <div>
@@ -367,101 +377,101 @@ const Users = () => {
       )}
       
       {/* Search bar */}
-      <div className="relative">
+      <div className="relative w-full">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
         <Input
           placeholder="Search users..."
-          className="pl-10 bg-background text-foreground border-border"
+          className="pl-10 bg-background text-foreground border-border shadow-inner w-full"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
       </div>
       
       {/* Users grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredUsers.map((u) => (
-          <Card key={u.id} className="bg-white border-border shadow-sm">
-            <CardHeader className="pb-2 bg-white text-foreground">
-              <div className="flex justify-between items-start">
-                <div className="flex items-center gap-2">
-                  <UserCircle size={24} className="text-primary" />
-                  <div>
-                    <CardTitle className="text-base text-foreground">{u.name}</CardTitle>
-                    <CardDescription className="text-xs text-muted-foreground">@{u.username}</CardDescription>
+      {filteredUsers.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredUsers.map((u) => (
+            <Card key={u.id} className="bg-white border-border shadow hover:shadow-lg transition-shadow">
+              <CardHeader className="pb-2 bg-white text-foreground">
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-2">
+                    <UserCircle size={36} className="text-primary" />
+                    <div>
+                      <CardTitle className="text-base text-foreground">{u.name}</CardTitle>
+                      <CardDescription className="text-xs text-muted-foreground">@{u.username}</CardDescription>
+                    </div>
+                  </div>
+                  <div className="flex items-center">
+                    {canEditUsers && u.id !== user?.id && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteUser(u.id)}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    )}
                   </div>
                 </div>
-                <div className="flex items-center">
-                  {canEditUsers && u.id !== user?.id && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDeleteUser(u.id)}
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 size={16} />
-                    </Button>
+              </CardHeader>
+              <CardContent className="bg-white text-foreground">
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="text-muted-foreground font-medium">Role</div>
+                  <div className="font-medium text-foreground">
+                    {u.role === "developer" && "Developer"}
+                    {u.role === "master" && "Master"}
+                    {u.role === "fmt" && "FMT"}
+                    {u.role === "socialMobilizer" && "Social Mobilizer"}
+                  </div>
+                  
+                  <div className="text-muted-foreground font-medium">Designation</div>
+                  <div className="font-medium text-foreground">{u.designation || u.role}</div>
+                  
+                  {u.email && (
+                    <>
+                      <div className="text-muted-foreground font-medium">Email</div>
+                      <div className="font-medium text-foreground">{u.email}</div>
+                    </>
+                  )}
+                  
+                  {u.phoneNumber && (
+                    <>
+                      <div className="text-muted-foreground font-medium">Phone</div>
+                      <div className="font-medium text-foreground">{u.phoneNumber}</div>
+                    </>
+                  )}
+                  
+                  <div className="text-muted-foreground font-medium">Status</div>
+                  <div className="flex items-center">
+                    <span
+                      className={`w-2 h-2 rounded-full mr-2 ${
+                        u.isOnline ? "bg-green-500" : "bg-gray-400"
+                      }`}
+                    ></span>
+                    <span className="text-foreground">{u.isOnline ? "Online" : "Offline"}</span>
+                  </div>
+                  
+                  {u.isOnline && u.location && (
+                    <div className="col-span-2 mt-2">
+                      <a 
+                        href={getLocationLink(u)} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-primary hover:text-primary/80 flex items-center gap-1 text-sm"
+                      >
+                        <MapPin size={14} />
+                        <span>Track Location</span>
+                      </a>
+                    </div>
                   )}
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent className="bg-white text-foreground">
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="text-muted-foreground">Role</div>
-                <div className="font-medium text-foreground">
-                  {u.role === "developer" && "Developer"}
-                  {u.role === "master" && "Master"}
-                  {u.role === "fmt" && "FMT"}
-                  {u.role === "socialMobilizer" && "Social Mobilizer"}
-                </div>
-                
-                <div className="text-muted-foreground">Designation</div>
-                <div className="font-medium text-foreground">{u.designation || u.role}</div>
-                
-                {u.email && (
-                  <>
-                    <div className="text-muted-foreground">Email</div>
-                    <div className="font-medium text-foreground">{u.email}</div>
-                  </>
-                )}
-                
-                {u.phoneNumber && (
-                  <>
-                    <div className="text-muted-foreground">Phone</div>
-                    <div className="font-medium text-foreground">{u.phoneNumber}</div>
-                  </>
-                )}
-                
-                <div className="text-muted-foreground">Status</div>
-                <div className="flex items-center">
-                  <span
-                    className={`w-2 h-2 rounded-full mr-2 ${
-                      u.isOnline ? "bg-green-500" : "bg-gray-400"
-                    }`}
-                  ></span>
-                  <span className="text-foreground">{u.isOnline ? "Online" : "Offline"}</span>
-                </div>
-                
-                {u.isOnline && u.location && (
-                  <div className="col-span-2 mt-2">
-                    <a 
-                      href={getLocationLink(u)} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-primary hover:text-primary/80 flex items-center gap-1 text-sm"
-                    >
-                      <MapPin size={14} />
-                      <span>Track Location</span>
-                    </a>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-      
-      {filteredUsers.length === 0 && (
-        <div className="flex justify-center items-center h-40 bg-white/50 border border-border rounded-lg">
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="flex justify-center items-center h-60 bg-white/50 border border-border rounded-lg shadow-inner">
           <p className="text-muted-foreground">No users found</p>
         </div>
       )}

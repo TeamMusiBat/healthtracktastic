@@ -43,14 +43,13 @@ export function ThemeProvider({
     root.style.setProperty('--card', 'hsl(0, 0%, 100%)');
     root.style.setProperty('--border', 'hsl(210, 20%, 90%)');
     root.style.setProperty('--foreground', 'hsl(210, 20%, 25%)'); 
-    root.style.setProperty('--input', 'hsl(0, 0%, 100%)');
+    
+    // Ensure high contrast for text
     root.style.setProperty('--muted', 'hsl(210, 10%, 96%)');
     root.style.setProperty('--muted-foreground', 'hsl(215, 16%, 55%)');
     
-    // Ensure high contrast for text
-    root.style.setProperty('--foreground', 'hsl(210, 20%, 25%)'); 
-    
     // Make sure all form inputs are readable with proper borders
+    root.style.setProperty('--input', 'hsl(0, 0%, 100%)');
     root.style.setProperty('--input-text', 'hsl(210, 20%, 25%)');
     root.style.setProperty('--input-background', 'hsl(0, 0%, 100%)');
     
@@ -74,6 +73,10 @@ export function ThemeProvider({
     root.style.setProperty('--sidebar-background', 'hsl(0, 0%, 100%)');
     root.style.setProperty('--sidebar-foreground', 'hsl(210, 20%, 25%)');
     root.style.setProperty('--sidebar-border', 'hsl(210, 20%, 90%)');
+    
+    // Enhanced 3D button effects
+    root.style.setProperty('--button-shadow', '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)');
+    root.style.setProperty('--button-hover-shadow', '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)');
     
     // Apply these colors to all components
     document.querySelectorAll('input, button, select, textarea, dialog, [data-radix-popper-content-wrapper]').forEach(el => {

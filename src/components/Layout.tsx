@@ -11,7 +11,8 @@ import {
   LayoutDashboard,
   Database,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Menu
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useWindowSize } from "@/hooks/useWindowSize";
@@ -39,7 +40,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const { isDesktop } = useWindowSize();
   const location = useLocation();
   const navigate = useNavigate();
-  const [autoCollapse, setAutoCollapse] = useState(true); // Default to collapsed for better UX
+  const [autoCollapse, setAutoCollapse] = useState(false); // Default to open for better UX
   
   // Auto-collapse detection - if user moves mouse away from sidebar
   useEffect(() => {
@@ -50,9 +51,11 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         
         const sidebarRect = sidebar.getBoundingClientRect();
         // If mouse is far away from sidebar, collapse it
-        if (e.clientX > sidebarRect.right + 50) {
+        if (e.clientX > sidebarRect.right + 100) {
           setAutoCollapse(true);
-        } else if (e.clientX < 10) {
+        } 
+        // If mouse is near the left edge, expand it
+        else if (e.clientX < 50) {
           setAutoCollapse(false);
         }
       };
@@ -126,7 +129,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         <Sidebar 
           variant={isMobile ? "floating" : "sidebar"} 
           collapsible={isMobile ? "offcanvas" : "icon"}
-          className="transition-all duration-300 border-r"
+          className="transition-all duration-300 border-r shadow-lg"
         >
           <SidebarHeader className="flex items-center justify-between p-4">
             <Link to="/" className="flex items-center gap-2">
@@ -140,10 +143,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             <div className="flex items-center gap-2">
               {isDesktop && (
                 <Button 
-                  variant="ghost" 
+                  variant="3d" 
                   size="icon" 
                   onClick={() => setAutoCollapse(!autoCollapse)}
-                  className="rounded-full h-8 w-8"
+                  className="rounded-full h-8 w-8 shadow-md hover:shadow-lg"
                 >
                   {autoCollapse ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
                 </Button>
@@ -162,9 +165,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                         asChild 
                         isActive={isActiveRoute(item.path)}
                         tooltip={item.label}
+                        className="hover:shadow-md transition-all"
                       >
                         <Link to={item.path} className="flex items-center gap-2">
-                          <item.icon className="h-4 w-4" />
+                          <item.icon className="h-5 w-5" />
                           <span>{item.label}</span>
                         </Link>
                       </SidebarMenuButton>
@@ -178,7 +182,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
           {isAuthenticated && canLogout && (
             <SidebarFooter className="p-4 border-t">
               <div className="flex flex-col gap-4">
-                <div className="flex items-center space-x-2 p-3 bg-secondary/20 rounded-md">
+                <div className="flex items-center space-x-2 p-3 bg-secondary/20 rounded-md shadow-inner">
                   <User className="h-5 w-5" />
                   <div className="truncate group-data-[collapsible=icon]:hidden">
                     <p className="text-sm font-medium">{user?.name}</p>
@@ -187,9 +191,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                 </div>
                 
                 <Button 
-                  variant="destructive" 
+                  variant="3d" 
                   onClick={logout} 
-                  className="w-full flex items-center justify-center gap-2"
+                  className="w-full flex items-center justify-center gap-2 bg-red-500 border-b-4 border-red-700 hover:bg-red-600"
                 >
                   <LogOut className="h-4 w-4" />
                   <span className="group-data-[collapsible=icon]:hidden">Logout</span>
@@ -200,16 +204,20 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         </Sidebar>
         
         {/* Main Content Area */}
-        <SidebarInset className="p-0 flex flex-col static">
-          <div className="flex h-16 items-center gap-4 border-b bg-white px-4 md:px-6 shadow-sm sticky top-0 z-10">
-            {isMobile && <SidebarTrigger />}
+        <SidebarInset className="p-0 flex flex-col static bg-gray-50">
+          <div className="flex h-16 items-center gap-4 border-b bg-white px-4 md:px-6 shadow-sm z-10">
+            {isMobile && (
+              <SidebarTrigger>
+                <Menu className="h-5 w-5" />
+              </SidebarTrigger>
+            )}
             <div className="flex-1">
               <h1 className="text-xl font-semibold">
                 {currentPageLabel}
               </h1>
             </div>
           </div>
-          <div className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto bg-background">
+          <div className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto bg-gray-50">
             {children}
           </div>
         </SidebarInset>
