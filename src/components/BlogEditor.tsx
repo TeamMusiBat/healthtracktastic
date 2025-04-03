@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,15 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import CamelCaseInput from "./CamelCaseInput";
 import { ImageUploader } from "@/components";
+
+interface Blog {
+  id: string;
+  title: string;
+  content: string;
+  author: string;
+  image?: string;
+  date: string;
+}
 
 interface BlogEditorProps {
   onSave: (blog: {
@@ -18,13 +27,25 @@ interface BlogEditorProps {
     date: string;
   }) => void;
   onCancel: () => void;
+  blogToEdit?: Blog | null;
 }
 
-const BlogEditor = ({ onSave, onCancel }: BlogEditorProps) => {
+const BlogEditor = ({ onSave, onCancel, blogToEdit }: BlogEditorProps) => {
   const { user } = useAuth();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [images, setImages] = useState<string[]>([]);
+  
+  // If editing a blog, populate form with blog data
+  useEffect(() => {
+    if (blogToEdit) {
+      setTitle(blogToEdit.title);
+      setContent(blogToEdit.content);
+      if (blogToEdit.image) {
+        setImages([blogToEdit.image]);
+      }
+    }
+  }, [blogToEdit]);
   
   const handleSave = () => {
     if (!title.trim()) {
@@ -37,22 +58,21 @@ const BlogEditor = ({ onSave, onCancel }: BlogEditorProps) => {
       return;
     }
     
-    // Create new blog
-    const newBlog = {
+    // Create new blog or update existing
+    const blogData = {
       title,
       content,
       author: user?.name || "Asif Jamali",
       image: images[0] || undefined,
-      date: new Date().toISOString(),
+      date: blogToEdit ? blogToEdit.date : new Date().toISOString(),
     };
     
-    onSave(newBlog);
-    toast.success("Blog created successfully");
+    onSave(blogData);
   };
   
   return (
-    <div className="space-y-4 border rounded-md p-4">
-      <h2 className="text-xl font-bold">Create New Blog</h2>
+    <div className="space-y-4 border rounded-md p-4 bg-white">
+      <h2 className="text-xl font-bold">{blogToEdit ? "Edit Blog" : "Create New Blog"}</h2>
       
       <div className="space-y-2">
         <Label htmlFor="title">Title</Label>
@@ -88,7 +108,7 @@ const BlogEditor = ({ onSave, onCancel }: BlogEditorProps) => {
           Cancel
         </Button>
         <Button onClick={handleSave}>
-          Publish Blog
+          {blogToEdit ? "Update Blog" : "Publish Blog"}
         </Button>
       </div>
     </div>

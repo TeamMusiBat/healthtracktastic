@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { 
   Home, 
@@ -9,7 +9,7 @@ import {
   User, 
   LogOut,
   LayoutDashboard,
-  ChevronDown,
+  Database,
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
@@ -38,6 +38,31 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const isMobile = useIsMobile();
   const { isDesktop } = useWindowSize();
   const location = useLocation();
+  const navigate = useNavigate();
+  const [autoCollapse, setAutoCollapse] = useState(false);
+  
+  // Auto-collapse detection - if user moves mouse away from sidebar
+  useEffect(() => {
+    if (!isMobile && isDesktop) {
+      const handleMouseMovement = (e: MouseEvent) => {
+        const sidebar = document.querySelector('[data-sidebar="sidebar"]');
+        if (!sidebar) return;
+        
+        const sidebarRect = sidebar.getBoundingClientRect();
+        // If mouse is far away from sidebar, collapse it
+        if (e.clientX > sidebarRect.right + 100) {
+          setAutoCollapse(true);
+        } else if (e.clientX < 50) {
+          setAutoCollapse(false);
+        }
+      };
+      
+      document.addEventListener('mousemove', handleMouseMovement);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMovement);
+      };
+    }
+  }, [isMobile, isDesktop]);
   
   const isActiveRoute = (path: string) => {
     return location.pathname === path;
@@ -68,6 +93,17 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     { path: "/blogs", label: "Blogs", icon: FileText, requiresAuth: false },
   ];
   
+  // Add DB Status page only for developers
+  if (user?.role === 'developer') {
+    navItems.push({ 
+      path: "/db-status", 
+      label: "DB Status", 
+      icon: Database, 
+      requiresAuth: true,
+      requiresRole: ["developer"]
+    });
+  }
+  
   const filteredNavItems = navItems.filter(item => {
     if (!item.requiresAuth) return true;
     if (!isAuthenticated) return false;
@@ -78,13 +114,13 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   });
 
   // Only allow master and developer to logout
-  const canLogout = user?.role === "master" || user?.role === "developer";
+  const canLogout = user?.role === 'master' || user?.role === 'developer';
 
   // Get current route label for header
   const currentPageLabel = filteredNavItems.find(item => isActiveRoute(item.path))?.label || "Track4Health";
 
   return (
-    <SidebarProvider defaultOpen={isDesktop}>
+    <SidebarProvider defaultOpen={!autoCollapse && isDesktop}>
       <div className="flex min-h-screen w-full bg-background">
         {/* Sidebar with collapsible behavior */}
         <Sidebar 
@@ -95,14 +131,23 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
           <SidebarHeader className="flex items-center justify-between p-4">
             <Link to="/" className="flex items-center gap-2">
               <div className="flex items-center">
-                <span className="text-xl font-bold">T4H</span>
+                <span className="text-xl font-bold text-primary">T4H</span>
                 <span className="ml-2 text-xl font-bold transition-opacity duration-200 group-data-[collapsible=icon]:hidden">
                   Track4Health
                 </span>
               </div>
             </Link>
             <div className="flex items-center gap-2">
-              {isDesktop && <SidebarTrigger />}
+              {isDesktop && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => setAutoCollapse(!autoCollapse)}
+                  className="rounded-full h-8 w-8"
+                >
+                  {autoCollapse ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+                </Button>
+              )}
             </div>
           </SidebarHeader>
           
@@ -155,8 +200,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         </Sidebar>
         
         {/* Main Content Area */}
-        <SidebarInset className="p-0">
-          <div className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+        <SidebarInset className="p-0 flex flex-col">
+          <div className="flex h-16 items-center gap-4 border-b bg-white px-4 md:px-6 shadow-sm">
             {isMobile && <SidebarTrigger />}
             <div className="flex-1">
               <h1 className="text-xl font-semibold">
@@ -164,7 +209,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               </h1>
             </div>
           </div>
-          <div className="flex-1 p-6 md:p-8">
+          <div className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto bg-background">
             {children}
           </div>
         </SidebarInset>

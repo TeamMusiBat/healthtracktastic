@@ -2,10 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, ArrowRight } from 'lucide-react';
+import { PlusCircle, ArrowRight, Pencil, Trash2 } from 'lucide-react';
 import { BlogEditor } from '@/components';
 import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { toast } from 'sonner';
 
 interface Blog {
   id: string;
@@ -32,7 +33,7 @@ const initialBlogs: Blog[] = [
     content: 'Vaccinations are one of the most effective public health interventions, preventing millions of deaths annually. They work by stimulating the immune system to recognize and fight specific pathogens. Community immunity (herd immunity) occurs when a significant portion of a population becomes immune, reducing disease spread. Following recommended vaccination schedules is crucial for children\'s health and community protection. Healthcare providers must address vaccine hesitancy through education and trust-building. Together, we can prevent the resurgence of deadly diseases through comprehensive vaccination programs.',
     author: 'Asif Jamali',
     date: '2023-06-20',
-    image: 'https://images.unsplash.com/photo-1576765608866-5b51f5501212?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2533&q=80'
+    image: 'https://plus.unsplash.com/premium_photo-1661766752153-9e9f00bc97a6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1974&q=80'
   },
   {
     id: '3',
@@ -61,14 +62,15 @@ const initialBlogs: Blog[] = [
 ];
 
 const Blogs = () => {
-  const [blogs, setBlogs] = useState<Blog[]>(initialBlogs);
+  const [blogs, setBlogs] = useState<Blog[]>([]);
   const [showEditor, setShowEditor] = useState(false);
   const [displayLimit, setDisplayLimit] = useState(4);
   const [selectedBlog, setSelectedBlog] = useState<Blog | null>(null);
+  const [editingBlog, setEditingBlog] = useState<Blog | null>(null);
   const { user, isAuthenticated } = useAuth();
   const isDeveloper = user?.role === 'developer';
   
-  // Shuffle blogs on component mount to display random blogs
+  // Shuffle and display 4 random blogs on component mount
   useEffect(() => {
     const shuffled = [...initialBlogs].sort(() => 0.5 - Math.random());
     setBlogs(shuffled);
@@ -80,20 +82,41 @@ const Blogs = () => {
   };
   
   const handleSaveBlog = (blog: Omit<Blog, 'id'>) => {
-    const newBlog: Blog = {
-      ...blog,
-      id: Date.now().toString()
-    };
-    
-    setBlogs([newBlog, ...blogs]);
+    if (editingBlog) {
+      // Update existing blog
+      const updatedBlogs = blogs.map(b => 
+        b.id === editingBlog.id ? { ...blog, id: editingBlog.id } : b
+      );
+      setBlogs(updatedBlogs);
+      setEditingBlog(null);
+      toast.success("Blog updated successfully");
+    } else {
+      // Add new blog
+      const newBlog: Blog = {
+        ...blog,
+        id: Date.now().toString()
+      };
+      setBlogs([newBlog, ...blogs]);
+      toast.success("Blog created successfully");
+    }
     setShowEditor(false);
+  };
+  
+  const handleEditBlog = (blog: Blog) => {
+    setEditingBlog(blog);
+    setShowEditor(true);
+  };
+  
+  const handleDeleteBlog = (id: string) => {
+    setBlogs(blogs.filter(blog => blog.id !== id));
+    toast.success("Blog deleted successfully");
   };
   
   const handleShowMore = () => {
     setDisplayLimit(blogs.length);
   };
 
-  // Display all blogs when showAll is true, otherwise show limited blogs
+  // Display random 4 blogs when limited, otherwise show all
   const visibleBlogs = blogs.slice(0, displayLimit);
   
   return (
@@ -103,7 +126,10 @@ const Blogs = () => {
         
         {isDeveloper && (
           <Button 
-            onClick={() => setShowEditor(!showEditor)}
+            onClick={() => {
+              setEditingBlog(null);
+              setShowEditor(!showEditor);
+            }}
             className="flex items-center gap-2"
           >
             <PlusCircle size={18} />
@@ -115,7 +141,11 @@ const Blogs = () => {
       {showEditor && (
         <BlogEditor 
           onSave={handleSaveBlog}
-          onCancel={() => setShowEditor(false)}
+          onCancel={() => {
+            setShowEditor(false);
+            setEditingBlog(null);
+          }}
+          blogToEdit={editingBlog}
         />
       )}
       
@@ -129,6 +159,26 @@ const Blogs = () => {
                   alt={blog.title} 
                   className="absolute inset-0 w-full h-full object-cover"
                 />
+                {isDeveloper && (
+                  <div className="absolute top-2 right-2 flex space-x-2">
+                    <Button 
+                      variant="secondary" 
+                      size="icon" 
+                      className="h-8 w-8 bg-white/80 hover:bg-white"
+                      onClick={() => handleEditBlog(blog)}
+                    >
+                      <Pencil size={16} />
+                    </Button>
+                    <Button 
+                      variant="destructive" 
+                      size="icon" 
+                      className="h-8 w-8 bg-white/80 hover:bg-red-500 hover:text-white"
+                      onClick={() => handleDeleteBlog(blog.id)}
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
             <CardHeader>

@@ -13,6 +13,7 @@ import Users from "./pages/Users";
 import AwarenessSessions from "./pages/AwarenessSessions";
 import ChildScreening from "./pages/ChildScreening";
 import Blogs from "./pages/Blogs";
+import DbStatus from "./pages/DbStatus";
 import NotFound from "./pages/NotFound";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { HealthDataProvider } from "./contexts/HealthDataContext";
@@ -115,6 +116,12 @@ const AppContent = () => {
         <Route path="/child-screening" element={
           <ProtectedRoute>
             <ChildScreening />
+          </ProtectedRoute>
+        } />
+        {/* Database status page - developer only */}
+        <Route path="/db-status" element={
+          <ProtectedRoute requiredRoles={["developer"]}>
+            <DbStatus />
           </ProtectedRoute>
         } />
         {/* Blogs page is publicly accessible */}
