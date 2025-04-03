@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -29,13 +28,20 @@ const Dashboard = () => {
   const isAdminRole = user?.role === "developer" || user?.role === "master";
   
   // Filter screenings and sessions based on user role
+  // Since 'conductedBy' doesn't exist directly on these types, we need to check other properties
   const filteredScreenings = isAdminRole 
     ? childScreenings 
-    : childScreenings.filter(screening => screening.conductedBy === user?.username);
+    : childScreenings.filter(screening => 
+        screening.userName === user?.username || 
+        screening.createdBy === user?.username
+      );
     
   const filteredSessions = isAdminRole
     ? awarenessSessions
-    : awarenessSessions.filter(session => session.conductedBy === user?.username);
+    : awarenessSessions.filter(session => 
+        session.userName === user?.username || 
+        session.createdBy === user?.username
+      );
 
   // Calculate stats based on filtered data
   const totalChildrenScreened = filteredScreenings.reduce((total, screening) => {
