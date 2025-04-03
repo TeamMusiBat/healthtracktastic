@@ -28,7 +28,7 @@ const initialBlogs: Blog[] = [
   {
     id: '2',
     title: 'Vaccination: Protecting Communities',
-    content: 'Vaccinations are one of the most effective public health interventions, preventing millions of deaths annually. They work by stimulating the immune system to recognize and fight specific pathogens. Community immunity (herd immunity) occurs when a significant portion of a population becomes immune, reducing disease spread. Following recommended vaccination schedules is crucial for children's health and community protection. Healthcare providers must address vaccine hesitancy through education and trust-building. Together, we can prevent the resurgence of deadly diseases through comprehensive vaccination programs.',
+    content: 'Vaccinations are one of the most effective public health interventions, preventing millions of deaths annually. They work by stimulating the immune system to recognize and fight specific pathogens. Community immunity (herd immunity) occurs when a significant portion of a population becomes immune, reducing disease spread. Following recommended vaccination schedules is crucial for children\'s health and community protection. Healthcare providers must address vaccine hesitancy through education and trust-building. Together, we can prevent the resurgence of deadly diseases through comprehensive vaccination programs.',
     author: 'Asif Jamali',
     date: '2023-06-20',
     image: 'https://images.unsplash.com/photo-1576765608866-5b51f5501212?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2533&q=80'
