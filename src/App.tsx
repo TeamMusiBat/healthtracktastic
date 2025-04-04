@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -13,6 +14,7 @@ import AwarenessSessions from "./pages/AwarenessSessions";
 import ChildScreening from "./pages/ChildScreening";
 import Blogs from "./pages/Blogs";
 import DbStatus from "./pages/DbStatus";
+import GPSCamera from "./pages/GPSCamera";
 import NotFound from "./pages/NotFound";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { HealthDataProvider } from "./contexts/HealthDataContext";
@@ -115,6 +117,12 @@ const AppContent = () => {
         <Route path="/child-screening" element={
           <ProtectedRoute>
             <ChildScreening />
+          </ProtectedRoute>
+        } />
+        {/* GPS Camera page - requires authentication */}
+        <Route path="/gps-camera" element={
+          <ProtectedRoute>
+            <GPSCamera />
           </ProtectedRoute>
         } />
         {/* Database status page - developer only */}

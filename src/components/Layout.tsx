@@ -12,7 +12,8 @@ import {
   Database,
   ChevronLeft,
   ChevronRight,
-  Menu
+  Menu,
+  Camera
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useWindowSize } from "@/hooks/useWindowSize";
@@ -42,6 +43,7 @@ const iconComponents = {
   childScreening: { icon: FileText, emoji: "👶" },
   blogs: { icon: FileText, emoji: "📝" },
   database: { icon: Database, emoji: "🗄️" },
+  camera: { icon: Camera, emoji: "📸" },
 };
 
 const LayoutContent = ({ children }: { children: React.ReactNode }) => {
@@ -105,6 +107,12 @@ const LayoutContent = ({ children }: { children: React.ReactNode }) => {
       requiresAuth: true 
     },
     { path: "/blogs", label: "Blogs", icon: iconComponents.blogs, requiresAuth: false },
+    { 
+      path: "/gps-camera", 
+      label: "GPS Camera", 
+      icon: iconComponents.camera,
+      requiresAuth: true 
+    },
   ];
   
   // Add DB Status page only for developers
@@ -249,10 +257,8 @@ const LayoutContent = ({ children }: { children: React.ReactNode }) => {
 
 // Wrap the layout content with SidebarProvider
 const Layout = ({ children }: { children: React.ReactNode }) => {
-  const { isDesktop } = useWindowSize();
-  
   return (
-    <SidebarProvider defaultOpen={isDesktop}>
+    <SidebarProvider defaultOpen={true}>
       <LayoutContent>{children}</LayoutContent>
     </SidebarProvider>
   );
