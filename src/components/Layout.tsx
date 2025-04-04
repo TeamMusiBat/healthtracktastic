@@ -34,15 +34,15 @@ import {
   useSidebar
 } from "@/components/ui/sidebar";
 
-// Define emoji versions of our icons for the sidebar
-const iconEmojis = {
-  home: "🏠",
-  dashboard: "📊",
-  users: "👥",
-  awarenessSession: "🗣️",
-  childScreening: "👶",
-  blogs: "📝",
-  database: "🗄️",
+// Define standard icons for our sidebar (no emojis)
+const iconComponents = {
+  home: Home,
+  dashboard: LayoutDashboard,
+  users: Users,
+  awarenessSession: FileText,
+  childScreening: FileText,
+  blogs: FileText,
+  database: Database,
 };
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
@@ -51,9 +51,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const { isDesktop } = useWindowSize();
   const location = useLocation();
   const navigate = useNavigate();
-  const [autoCollapse, setAutoCollapse] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { setSidebarOpen } = useSidebar();
   
-  // Auto-collapse detection - if user moves mouse away from sidebar
+  // Mouse movement detection for sidebar auto-expand/collapse
   useEffect(() => {
     if (!isMobile && isDesktop) {
       const handleMouseMovement = (e: MouseEvent) => {
@@ -61,13 +62,16 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         if (!sidebar) return;
         
         const sidebarRect = sidebar.getBoundingClientRect();
-        // If mouse is far away from sidebar, collapse it
-        if (e.clientX > sidebarRect.right + 100) {
-          setAutoCollapse(true);
+        
+        // If mouse is near the left edge, expand the sidebar
+        if (e.clientX < 20) {
+          setIsCollapsed(false);
+          setSidebarOpen(true);
         } 
-        // If mouse is near the left edge, expand it
-        else if (e.clientX < 50) {
-          setAutoCollapse(false);
+        // If mouse is far from sidebar, collapse it
+        else if (e.clientX > sidebarRect.right + 100) {
+          setIsCollapsed(true);
+          setSidebarOpen(false);
         }
       };
       
@@ -76,38 +80,35 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         document.removeEventListener('mousemove', handleMouseMovement);
       };
     }
-  }, [isMobile, isDesktop]);
+  }, [isMobile, isDesktop, setSidebarOpen]);
   
   const isActiveRoute = (path: string) => {
     return location.pathname === path;
   };
 
   const navItems = [
-    { path: "/", label: "Home", icon: Home, emoji: iconEmojis.home, requiresAuth: false },
-    { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard, emoji: iconEmojis.dashboard, requiresAuth: true },
+    { path: "/", label: "Home", icon: iconComponents.home, requiresAuth: false },
+    { path: "/dashboard", label: "Dashboard", icon: iconComponents.dashboard, requiresAuth: true },
     { 
       path: "/users", 
       label: "Users", 
-      icon: Users, 
-      emoji: iconEmojis.users,
+      icon: iconComponents.users,
       requiresAuth: true,
       requiresRole: ["developer", "master"]
     },
     { 
       path: "/awareness-sessions", 
       label: "Awareness Sessions", 
-      icon: FileText,
-      emoji: iconEmojis.awarenessSession,
+      icon: iconComponents.awarenessSession,
       requiresAuth: true 
     },
     { 
       path: "/child-screening", 
       label: "Child Screening", 
-      icon: FileText,
-      emoji: iconEmojis.childScreening,
+      icon: iconComponents.childScreening,
       requiresAuth: true 
     },
-    { path: "/blogs", label: "Blogs", icon: FileText, emoji: iconEmojis.blogs, requiresAuth: false },
+    { path: "/blogs", label: "Blogs", icon: iconComponents.blogs, requiresAuth: false },
   ];
   
   // Add DB Status page only for developers
@@ -115,8 +116,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     navItems.push({ 
       path: "/db-status", 
       label: "DB Status", 
-      icon: Database,
-      emoji: iconEmojis.database,
+      icon: iconComponents.database,
       requiresAuth: true,
       requiresRole: ["developer"]
     });
@@ -137,14 +137,18 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   // Get current route label for header
   const currentPageLabel = filteredNavItems.find(item => isActiveRoute(item.path))?.label || "Track4Health";
 
+  const handleToggleSidebar = () => {
+    setIsCollapsed(!isCollapsed);
+  };
+
   return (
-    <SidebarProvider defaultOpen={!autoCollapse && isDesktop}>
+    <SidebarProvider defaultOpen={isDesktop}>
       <div className="flex min-h-screen w-full bg-background">
-        {/* Sidebar with collapsible behavior */}
+        {/* Sidebar with professional design */}
         <Sidebar 
           variant={isMobile ? "floating" : "sidebar"} 
           collapsible={isMobile ? "offcanvas" : "icon"}
-          className="transition-all duration-300 border-r shadow-lg"
+          className="transition-all duration-300 border-r shadow-md"
         >
           <SidebarHeader className="flex items-center justify-between p-4">
             <Link to="/" className="flex items-center gap-2">
@@ -157,10 +161,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                 <Button 
                   variant="3d" 
                   size="icon" 
-                  onClick={() => setAutoCollapse(!autoCollapse)}
-                  className="rounded-full h-8 w-8 shadow-md hover:shadow-lg"
+                  onClick={handleToggleSidebar}
+                  className="rounded-full h-8 w-8 shadow-md hover:shadow-lg transition-all"
                 >
-                  {autoCollapse ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+                  {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
                 </Button>
               )}
             </div>
@@ -171,26 +175,26 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               <SidebarGroupLabel>Navigation</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {filteredNavItems.map((item) => (
-                    <SidebarMenuItem key={item.path}>
-                      <SidebarMenuButton 
-                        asChild 
-                        isActive={isActiveRoute(item.path)}
-                        tooltip={item.label}
-                        className="hover:shadow-md transition-all"
-                      >
-                        <Link to={item.path} className="flex items-center gap-2">
-                          <div className="flex items-center justify-center w-6">
-                            <span className="hidden group-data-[collapsible=icon]:block text-lg">
-                              {item.emoji}
-                            </span>
-                            <item.icon className="h-5 w-5 group-data-[collapsible=icon]:hidden" />
-                          </div>
-                          <span>{item.label}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
+                  {filteredNavItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <SidebarMenuItem key={item.path}>
+                        <SidebarMenuButton 
+                          asChild 
+                          isActive={isActiveRoute(item.path)}
+                          tooltip={item.label}
+                          className="hover:shadow-md transition-all"
+                        >
+                          <Link to={item.path} className="flex items-center gap-2">
+                            <div className="flex items-center justify-center w-6">
+                              <Icon className="h-5 w-5" />
+                            </div>
+                            <span>{item.label}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
@@ -210,7 +214,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                 <Button 
                   variant="3d" 
                   onClick={logout} 
-                  className="w-full flex items-center justify-center gap-2 bg-red-500 border-b-4 border-red-700 hover:bg-red-600"
+                  className="w-full flex items-center justify-center gap-2 bg-red-500 border-b-4 border-red-700 hover:bg-red-600 text-white font-medium"
                 >
                   <LogOut className="h-4 w-4" />
                   <span className="group-data-[collapsible=icon]:hidden">Logout</span>
@@ -229,7 +233,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               </SidebarTrigger>
             )}
             <div className="flex-1">
-              <h1 className="text-xl font-semibold">
+              <h1 className="text-xl font-semibold text-gray-900">
                 {currentPageLabel}
               </h1>
             </div>

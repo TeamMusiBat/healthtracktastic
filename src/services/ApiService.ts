@@ -1,4 +1,3 @@
-
 // src/services/ApiService.ts
 import { User, UserRole } from "@/contexts/AuthContext";
 import { AwarenessSession, ChildScreening } from "@/contexts/HealthDataContext";
@@ -14,7 +13,7 @@ class ApiService {
     this.currentUser = user;
   }
   
-  // Method to handle API requests with error handling
+  // Method to handle API requests with improved error handling
   private async request<T>(url: string, options: RequestInit = {}): Promise<T> {
     try {
       // Check network status
@@ -30,13 +29,22 @@ class ApiService {
         },
       });
       
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.message || "API request failed");
+      // Handle empty responses gracefully
+      const text = await response.text();
+      if (!text) {
+        throw new Error("Empty response from server");
       }
       
-      return data;
+      try {
+        const data = JSON.parse(text);
+        if (!data.success) {
+          throw new Error(data.message || "API request failed");
+        }
+        return data;
+      } catch (parseError) {
+        console.error("Failed to parse JSON:", text);
+        throw new Error(`Failed to parse server response: ${(parseError as Error).message}`);
+      }
     } catch (error) {
       console.error(`API Error (${url}):`, error);
       throw error;
@@ -206,12 +214,18 @@ class ApiService {
     }
   }
   
-  // Method to check server connectivity
+  // Updated method to check server connectivity with better error handling
   async checkServerConnectivity(): Promise<boolean> {
     try {
-      await fetch(`${this.apiBaseUrl}/db_config.php`, { method: "HEAD" });
-      return true;
+      const response = await fetch(`${this.apiBaseUrl}/db_config.php`, { 
+        method: "HEAD",
+        headers: {
+          "Cache-Control": "no-cache"
+        }
+      });
+      return response.ok;
     } catch (error) {
+      console.error("Server connectivity check failed:", error);
       return false;
     }
   }

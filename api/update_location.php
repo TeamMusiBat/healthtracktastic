@@ -3,42 +3,43 @@
 include 'db_config.php';
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST');
-header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
-// Get request method
-$method = $_SERVER['REQUEST_METHOD'];
-
-if ($method !== 'POST') {
-    echo json_encode(["success" => false, "message" => "Invalid request method"]);
+// Handle preflight OPTIONS request
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
     exit();
 }
 
 // Get POST data
 $data = json_decode(file_get_contents('php://input'), true);
 
-// Validate required fields
+// Check if required data is present
 if (!isset($data['userId']) || !isset($data['latitude']) || !isset($data['longitude'])) {
-    echo json_encode(["success" => false, "message" => "Missing required fields"]);
+    echo json_encode(["success" => false, "message" => "Missing required data"]);
     exit();
 }
 
 // Update user location
-$sql = "UPDATE users SET location = ?, lastActive = NOW() WHERE id = ?";
+$sql = "UPDATE users SET location = ? WHERE id = ?";
 $stmt = $conn->prepare($sql);
 
+// Create location JSON
 $location = json_encode([
     'latitude' => $data['latitude'],
     'longitude' => $data['longitude']
 ]);
 
-$stmt->bind_param("si", $location, $data['userId']);
+$stmt->bind_param('ss', $location, $data['userId']);
+$result = $stmt->execute();
 
-if ($stmt->execute()) {
+if ($result) {
     echo json_encode(["success" => true, "message" => "Location updated successfully"]);
 } else {
-    echo json_encode(["success" => false, "message" => "Error: " . $stmt->error]);
+    echo json_encode(["success" => false, "message" => "Failed to update location: " . $conn->error]);
 }
 
+$stmt->close();
 $conn->close();
 ?>
