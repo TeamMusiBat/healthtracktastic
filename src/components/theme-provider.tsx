@@ -46,15 +46,15 @@ export function ThemeProvider({
     
     // Ensure high contrast for text
     root.style.setProperty('--muted', 'hsl(210, 10%, 96%)');
-    root.style.setProperty('--muted-foreground', 'hsl(215, 16%, 55%)');
+    root.style.setProperty('--muted-foreground', 'hsl(215, 16%, 47%)');
     
     // Make sure all form inputs are readable with proper borders
     root.style.setProperty('--input', 'hsl(0, 0%, 100%)');
-    root.style.setProperty('--input-text', 'hsl(210, 20%, 25%)');
     root.style.setProperty('--input-background', 'hsl(0, 0%, 100%)');
+    root.style.setProperty('--input-text', 'hsl(210, 20%, 25%)');
     
     // Ensure that buttons and interactive elements have good contrast
-    root.style.setProperty('--primary', 'hsl(196, 52%, 56%)'); // Match the health tracking blue
+    root.style.setProperty('--primary', 'hsl(196, 67%, 45%)'); // Deeper blue for better contrast
     root.style.setProperty('--primary-foreground', 'hsl(0, 0%, 100%)');
     
     // Set the same background and foreground colors for dialogs too

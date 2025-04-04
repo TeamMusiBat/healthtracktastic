@@ -233,19 +233,19 @@ const Users = () => {
   return (
     <div className="space-y-6 max-w-6xl mx-auto bg-white p-6 rounded-xl shadow-xl">
       <div className="flex justify-between items-center flex-wrap gap-4">
-        <h1 className="text-2xl font-bold">User Management</h1>
+        <h1 className="text-2xl font-bold text-foreground">User Management</h1>
         
         <Dialog open={isAddUserDialogOpen} onOpenChange={setIsAddUserDialogOpen}>
           <DialogTrigger asChild>
-            <Button variant="3d" className="flex items-center gap-2 bg-primary text-white border-b-4 border-primary/60 hover:shadow-xl">
+            <Button variant="3d" className="flex items-center gap-2 bg-primary text-white border-b-4 border-primary-foreground/20">
               <Plus size={16} />
               <span>Add User</span>
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md bg-white text-foreground">
+          <DialogContent className="sm:max-w-md bg-white">
             <DialogHeader>
-              <DialogTitle>Add New User</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-foreground">Add New User</DialogTitle>
+              <DialogDescription className="text-muted-foreground">
                 Create a new user account with appropriate role.
               </DialogDescription>
             </DialogHeader>
@@ -354,7 +354,7 @@ const Users = () => {
               <Button 
                 onClick={handleAddUser} 
                 variant="3d" 
-                className="bg-primary text-white border-b-4 border-primary/60"
+                className="bg-primary text-white border-b-4 border-primary-foreground/20"
               >
                 Add User
               </Button>

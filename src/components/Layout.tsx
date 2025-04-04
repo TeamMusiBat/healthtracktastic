@@ -34,13 +34,24 @@ import {
   useSidebar
 } from "@/components/ui/sidebar";
 
+// Define emoji versions of our icons for the sidebar
+const iconEmojis = {
+  home: "🏠",
+  dashboard: "📊",
+  users: "👥",
+  awarenessSession: "🗣️",
+  childScreening: "👶",
+  blogs: "📝",
+  database: "🗄️",
+};
+
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, user, logout } = useAuth();
   const isMobile = useIsMobile();
   const { isDesktop } = useWindowSize();
   const location = useLocation();
   const navigate = useNavigate();
-  const [autoCollapse, setAutoCollapse] = useState(false); // Default to open for better UX
+  const [autoCollapse, setAutoCollapse] = useState(false);
   
   // Auto-collapse detection - if user moves mouse away from sidebar
   useEffect(() => {
@@ -72,28 +83,31 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   };
 
   const navItems = [
-    { path: "/", label: "Home", icon: Home, requiresAuth: false },
-    { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard, requiresAuth: true },
+    { path: "/", label: "Home", icon: Home, emoji: iconEmojis.home, requiresAuth: false },
+    { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard, emoji: iconEmojis.dashboard, requiresAuth: true },
     { 
       path: "/users", 
       label: "Users", 
       icon: Users, 
+      emoji: iconEmojis.users,
       requiresAuth: true,
       requiresRole: ["developer", "master"]
     },
     { 
       path: "/awareness-sessions", 
       label: "Awareness Sessions", 
-      icon: FileText, 
+      icon: FileText,
+      emoji: iconEmojis.awarenessSession,
       requiresAuth: true 
     },
     { 
       path: "/child-screening", 
       label: "Child Screening", 
-      icon: FileText, 
+      icon: FileText,
+      emoji: iconEmojis.childScreening,
       requiresAuth: true 
     },
-    { path: "/blogs", label: "Blogs", icon: FileText, requiresAuth: false },
+    { path: "/blogs", label: "Blogs", icon: FileText, emoji: iconEmojis.blogs, requiresAuth: false },
   ];
   
   // Add DB Status page only for developers
@@ -101,7 +115,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     navItems.push({ 
       path: "/db-status", 
       label: "DB Status", 
-      icon: Database, 
+      icon: Database,
+      emoji: iconEmojis.database,
       requiresAuth: true,
       requiresRole: ["developer"]
     });
@@ -134,10 +149,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
           <SidebarHeader className="flex items-center justify-between p-4">
             <Link to="/" className="flex items-center gap-2">
               <div className="flex items-center">
-                <span className="text-xl font-bold text-primary">T4H</span>
-                <span className="ml-2 text-xl font-bold transition-opacity duration-200 group-data-[collapsible=icon]:hidden">
-                  Track4Health
-                </span>
+                <span className="text-xl font-bold text-primary">Track4Health</span>
               </div>
             </Link>
             <div className="flex items-center gap-2">
@@ -168,7 +180,12 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                         className="hover:shadow-md transition-all"
                       >
                         <Link to={item.path} className="flex items-center gap-2">
-                          <item.icon className="h-5 w-5" />
+                          <div className="flex items-center justify-center w-6">
+                            <span className="hidden group-data-[collapsible=icon]:block text-lg">
+                              {item.emoji}
+                            </span>
+                            <item.icon className="h-5 w-5 group-data-[collapsible=icon]:hidden" />
+                          </div>
                           <span>{item.label}</span>
                         </Link>
                       </SidebarMenuButton>
@@ -204,8 +221,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         </Sidebar>
         
         {/* Main Content Area */}
-        <SidebarInset className="p-0 flex flex-col static bg-gray-50">
-          <div className="flex h-16 items-center gap-4 border-b bg-white px-4 md:px-6 shadow-sm z-10">
+        <SidebarInset className="p-0 flex flex-col bg-gray-50 overflow-auto">
+          <div className="sticky top-0 flex h-16 items-center gap-4 border-b bg-white px-4 md:px-6 shadow-sm z-10">
             {isMobile && (
               <SidebarTrigger>
                 <Menu className="h-5 w-5" />
@@ -217,7 +234,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               </h1>
             </div>
           </div>
-          <div className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto bg-gray-50">
+          <div className="flex-1 p-4 md:p-6 lg:p-8">
             {children}
           </div>
         </SidebarInset>
