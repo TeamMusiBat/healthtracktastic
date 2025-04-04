@@ -9,15 +9,15 @@ const button3dVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground border-b-4 border-primary-700 hover:bg-primary/90",
-        destructive: "bg-destructive text-destructive-foreground border-b-4 border-destructive-700 hover:bg-destructive/90",
-        outline: "border border-input bg-background border-b-4 hover:bg-accent hover:text-accent-foreground",
-        secondary: "bg-secondary text-secondary-foreground border-b-4 border-secondary-700 hover:bg-secondary/80",
+        default: "bg-primary text-primary-foreground border-b-4 border-primary-700 hover:bg-primary/90 active:translate-y-0.5 active:border-b-2 transition-all",
+        destructive: "bg-destructive text-destructive-foreground border-b-4 border-destructive-700 hover:bg-destructive/90 active:translate-y-0.5 active:border-b-2 transition-all",
+        outline: "border border-input bg-background border-b-4 hover:bg-accent hover:text-accent-foreground active:translate-y-0.5 active:border-b-2 transition-all",
+        secondary: "bg-secondary text-secondary-foreground border-b-4 border-secondary-700 hover:bg-secondary/80 active:translate-y-0.5 active:border-b-2 transition-all",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        success: "bg-green-500 text-white border-b-4 border-green-700 hover:bg-green-600",
-        warning: "bg-yellow-500 text-white border-b-4 border-yellow-700 hover:bg-yellow-600",
-        info: "bg-blue-500 text-white border-b-4 border-blue-700 hover:bg-blue-600",
+        success: "bg-green-500 text-white border-b-4 border-green-700 hover:bg-green-600 active:translate-y-0.5 active:border-b-2 transition-all",
+        warning: "bg-yellow-500 text-white border-b-4 border-yellow-700 hover:bg-yellow-600 active:translate-y-0.5 active:border-b-2 transition-all",
+        info: "bg-blue-500 text-white border-b-4 border-blue-700 hover:bg-blue-600 active:translate-y-0.5 active:border-b-2 transition-all",
         "3d": "bg-primary text-primary-foreground border-b-4 border-primary-700 hover:bg-primary/90 active:translate-y-0.5 active:border-b-2 transition-all",
       },
       size: {

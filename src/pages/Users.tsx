@@ -1,6 +1,4 @@
-
 import React, { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Card,
@@ -31,6 +29,7 @@ import { Plus, Search, Trash2, Eye, EyeOff, UserCircle, MapPin } from "lucide-re
 import { useAuth, User, UserRole } from "@/contexts/AuthContext";
 import CamelCaseInput from "@/components/CamelCaseInput";
 import ApiService from "@/services/ApiService";
+import { Button3d } from "@/components/ui/button-3d";
 
 const Users = () => {
   const { user, canAddMasters, canAddUsers, canEditUsers } = useAuth();
@@ -78,7 +77,7 @@ const Users = () => {
     fetchUsers();
   }, []);
   
-  // Handle showing developer account based on role
+  // Filter users based on search query
   const filteredUsers = users.filter((u) => {
     // Only developer can see developer accounts
     if (u.role === "developer" && user?.role !== "developer") {
@@ -237,10 +236,10 @@ const Users = () => {
         
         <Dialog open={isAddUserDialogOpen} onOpenChange={setIsAddUserDialogOpen}>
           <DialogTrigger asChild>
-            <Button variant="3d" className="flex items-center gap-2 bg-primary text-white border-b-4 border-primary-foreground/20">
+            <Button3d variant="3d" className="flex items-center gap-2 bg-green-600 text-white border-b-4 border-green-800 hover:bg-green-700">
               <Plus size={16} />
               <span>Add User</span>
-            </Button>
+            </Button3d>
           </DialogTrigger>
           <DialogContent className="sm:max-w-md bg-white">
             <DialogHeader>
@@ -318,15 +317,13 @@ const Users = () => {
                     placeholder="Enter password"
                     className="bg-background text-foreground border-border"
                   />
-                  <Button
+                  <button
                     type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                     onClick={toggleShowPassword}
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </Button>
+                  </button>
                 </div>
               </div>
               
@@ -336,10 +333,10 @@ const Users = () => {
                   onValueChange={(value: UserRole) => setNewUser({ ...newUser, role: value })}
                   value={newUser.role}
                 >
-                  <SelectTrigger id="role" className="bg-background text-foreground border-border">
+                  <SelectTrigger id="role" className="bg-white text-foreground border-border">
                     <SelectValue placeholder="Select a role" />
                   </SelectTrigger>
-                  <SelectContent className="bg-background text-foreground border-border">
+                  <SelectContent className="bg-white text-foreground border-border">
                     {canAddMasters && (
                       <SelectItem value="master">Master (User Management)</SelectItem>
                     )}
@@ -351,13 +348,13 @@ const Users = () => {
             </div>
             
             <DialogFooter>
-              <Button 
+              <Button3d 
                 onClick={handleAddUser} 
                 variant="3d" 
-                className="bg-primary text-white border-b-4 border-primary-foreground/20"
+                className="bg-green-600 text-white border-b-4 border-green-800 hover:bg-green-700"
               >
                 Add User
-              </Button>
+              </Button3d>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -381,7 +378,7 @@ const Users = () => {
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
         <Input
           placeholder="Search users..."
-          className="pl-10 bg-background text-foreground border-border shadow-inner w-full"
+          className="pl-10 bg-white text-foreground border-border shadow-inner w-full"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
@@ -403,14 +400,12 @@ const Users = () => {
                   </div>
                   <div className="flex items-center">
                     {canEditUsers && u.id !== user?.id && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
+                      <button
                         onClick={() => handleDeleteUser(u.id)}
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-full"
                       >
                         <Trash2 size={16} />
-                      </Button>
+                      </button>
                     )}
                   </div>
                 </div>

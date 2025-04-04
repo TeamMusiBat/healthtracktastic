@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useWindowSize } from "@/hooks/useWindowSize";
-import { Button } from "@/components/ui/button";
 import {
   SidebarProvider,
   Sidebar,
@@ -31,21 +30,21 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarInset,
-  useSidebar
 } from "@/components/ui/sidebar";
+import { Button3d } from "@/components/ui/button-3d";
 
-// Define standard icons for our sidebar (no emojis)
+// Define standard icons with emoji alternatives
 const iconComponents = {
-  home: Home,
-  dashboard: LayoutDashboard,
-  users: Users,
-  awarenessSession: FileText,
-  childScreening: FileText,
-  blogs: FileText,
-  database: Database,
+  home: { icon: Home, emoji: "🏠" },
+  dashboard: { icon: LayoutDashboard, emoji: "📊" },
+  users: { icon: Users, emoji: "👥" },
+  awarenessSession: { icon: FileText, emoji: "🗣️" },
+  childScreening: { icon: FileText, emoji: "👶" },
+  blogs: { icon: FileText, emoji: "📝" },
+  database: { icon: Database, emoji: "🗄️" },
 };
 
-const Layout = ({ children }: { children: React.ReactNode }) => {
+const LayoutContent = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, user, logout } = useAuth();
   const isMobile = useIsMobile();
   const { isDesktop } = useWindowSize();
@@ -140,107 +139,121 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   // Main layout component with sidebar and content
   return (
-    <SidebarProvider defaultOpen={isDesktop}>
-      <div className="flex min-h-screen w-full bg-background">
-        {/* Sidebar with professional design */}
-        <Sidebar 
-          variant={isMobile ? "floating" : "sidebar"} 
-          collapsible={isMobile ? "offcanvas" : "icon"}
-          className="transition-all duration-300 border-r shadow-md"
-        >
-          <SidebarHeader className="flex items-center justify-between p-4">
-            <Link to="/" className="flex items-center gap-2">
-              <div className="flex items-center">
-                <span className="text-xl font-bold text-primary">Track4Health</span>
-              </div>
-            </Link>
-            <div className="flex items-center gap-2">
-              {isDesktop && (
-                <Button 
-                  variant="3d" 
-                  size="icon" 
-                  onClick={handleToggleSidebar}
-                  className="rounded-full h-8 w-8 shadow-md hover:shadow-lg transition-all"
-                >
-                  {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-                </Button>
-              )}
+    <div className="flex min-h-screen w-full bg-background">
+      {/* Sidebar with professional design */}
+      <Sidebar 
+        variant={isMobile ? "floating" : "sidebar"} 
+        collapsible={isMobile ? "offcanvas" : "icon"}
+        className="transition-all duration-300 border-r shadow-md"
+      >
+        <SidebarHeader className="flex items-center justify-between p-4">
+          <Link to="/" className="flex items-center gap-2">
+            <div className="flex items-center">
+              <span className="text-xl font-bold text-primary">Track4Health</span>
             </div>
-          </SidebarHeader>
-          
-          <SidebarContent>
-            <SidebarGroup>
-              <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {filteredNavItems.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <SidebarMenuItem key={item.path}>
-                        <SidebarMenuButton 
-                          asChild 
-                          isActive={isActiveRoute(item.path)}
-                          tooltip={item.label}
-                          className="hover:shadow-md transition-all"
-                        >
-                          <Link to={item.path} className="flex items-center gap-2">
-                            <div className="flex items-center justify-center w-6">
-                              <Icon className="h-5 w-5" />
-                            </div>
-                            <span>{item.label}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    );
-                  })}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </SidebarContent>
-          
-          {isAuthenticated && canLogout && (
-            <SidebarFooter className="p-4 border-t">
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center space-x-2 p-3 bg-secondary/20 rounded-md shadow-inner">
-                  <User className="h-5 w-5" />
-                  <div className="truncate group-data-[collapsible=icon]:hidden">
-                    <p className="text-sm font-medium">{user?.name}</p>
-                    <p className="text-xs text-muted-foreground">{user?.role}</p>
-                  </div>
-                </div>
-                
-                <Button 
-                  variant="3d" 
-                  onClick={logout} 
-                  className="w-full flex items-center justify-center gap-2 bg-red-500 border-b-4 border-red-700 hover:bg-red-600 text-white font-medium"
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span className="group-data-[collapsible=icon]:hidden">Logout</span>
-                </Button>
-              </div>
-            </SidebarFooter>
-          )}
-        </Sidebar>
-        
-        {/* Main Content Area */}
-        <SidebarInset className="p-0 flex flex-col bg-gray-50 overflow-auto">
-          <div className="sticky top-0 flex h-16 items-center gap-4 border-b bg-white px-4 md:px-6 shadow-sm z-10">
-            {isMobile && (
-              <SidebarTrigger>
-                <Menu className="h-5 w-5" />
-              </SidebarTrigger>
+          </Link>
+          <div className="flex items-center gap-2">
+            {isDesktop && (
+              <Button3d 
+                variant="3d" 
+                size="icon" 
+                onClick={handleToggleSidebar}
+                className="rounded-full h-8 w-8 shadow-md hover:shadow-lg transition-all"
+              >
+                {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+              </Button3d>
             )}
-            <div className="flex-1">
-              <h1 className="text-xl font-semibold text-gray-900">
-                {currentPageLabel}
-              </h1>
+          </div>
+        </SidebarHeader>
+        
+        <SidebarContent>
+          <SidebarGroup>
+            <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {filteredNavItems.map((item) => {
+                  const ItemIcon = item.icon.icon;
+                  const emoji = item.icon.emoji;
+                  return (
+                    <SidebarMenuItem key={item.path}>
+                      <SidebarMenuButton 
+                        asChild 
+                        isActive={isActiveRoute(item.path)}
+                        tooltip={item.label}
+                        className="hover:shadow-md transition-all"
+                      >
+                        <Link to={item.path} className="flex items-center gap-2">
+                          <div className="flex items-center justify-center w-6">
+                            {isCollapsed ? (
+                              <span className="text-lg">{emoji}</span>
+                            ) : (
+                              <ItemIcon className="h-5 w-5" />
+                            )}
+                          </div>
+                          <span>{item.label}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+        
+        {isAuthenticated && canLogout && (
+          <SidebarFooter className="p-4 border-t">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center space-x-2 p-3 bg-secondary/20 rounded-md shadow-inner">
+                <User className="h-5 w-5" />
+                <div className="truncate group-data-[collapsible=icon]:hidden">
+                  <p className="text-sm font-medium">{user?.name}</p>
+                  <p className="text-xs text-muted-foreground">{user?.role}</p>
+                </div>
+              </div>
+              
+              <Button3d 
+                variant="3d" 
+                onClick={logout} 
+                className="w-full flex items-center justify-center gap-2 bg-red-500 border-b-4 border-red-700 hover:bg-red-600 text-white font-medium"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="group-data-[collapsible=icon]:hidden">Logout</span>
+              </Button3d>
             </div>
+          </SidebarFooter>
+        )}
+      </Sidebar>
+      
+      {/* Main Content Area */}
+      <SidebarInset className="p-0 flex flex-col bg-gray-50 overflow-auto">
+        <div className="sticky top-0 flex h-16 items-center gap-4 border-b bg-white px-4 md:px-6 shadow-sm z-10">
+          {isMobile && (
+            <SidebarTrigger>
+              <Menu className="h-5 w-5" />
+            </SidebarTrigger>
+          )}
+          <div className="flex-1">
+            <h1 className="text-xl font-semibold text-gray-900">
+              {currentPageLabel}
+            </h1>
           </div>
-          <div className="flex-1 p-4 md:p-6 lg:p-8">
-            {children}
-          </div>
-        </SidebarInset>
-      </div>
+        </div>
+        <div className="flex-1 p-4 md:p-6 lg:p-8">
+          {children}
+        </div>
+      </SidebarInset>
+    </div>
+  );
+};
+
+// Wrap the layout content with SidebarProvider
+const Layout = ({ children }: { children: React.ReactNode }) => {
+  const { isDesktop } = useWindowSize();
+  
+  return (
+    <SidebarProvider defaultOpen={isDesktop}>
+      <LayoutContent>{children}</LayoutContent>
     </SidebarProvider>
   );
 };

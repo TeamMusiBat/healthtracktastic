@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -133,7 +132,6 @@ const AppContent = () => {
 };
 
 const App = () => {
-  // We don't need the BrowserRouter here because it's in main.tsx
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
