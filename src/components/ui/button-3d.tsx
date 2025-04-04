@@ -2,7 +2,6 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
-import { buttonVariants } from "./button";
 
 // Create a new button variant for 3D buttons
 const button3dVariants = cva(
@@ -19,6 +18,7 @@ const button3dVariants = cva(
         success: "bg-green-500 text-white border-b-4 border-green-700 hover:bg-green-600",
         warning: "bg-yellow-500 text-white border-b-4 border-yellow-700 hover:bg-yellow-600",
         info: "bg-blue-500 text-white border-b-4 border-blue-700 hover:bg-blue-600",
+        "3d": "bg-primary text-primary-foreground border-b-4 border-primary-700 hover:bg-primary/90 active:translate-y-0.5 active:border-b-2 transition-all",
       },
       size: {
         default: "h-10 px-4 py-2",

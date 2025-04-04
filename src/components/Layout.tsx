@@ -52,7 +52,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const { setSidebarOpen } = useSidebar();
   
   // Mouse movement detection for sidebar auto-expand/collapse
   useEffect(() => {
@@ -66,12 +65,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         // If mouse is near the left edge, expand the sidebar
         if (e.clientX < 20) {
           setIsCollapsed(false);
-          setSidebarOpen(true);
         } 
         // If mouse is far from sidebar, collapse it
         else if (e.clientX > sidebarRect.right + 100) {
           setIsCollapsed(true);
-          setSidebarOpen(false);
         }
       };
       
@@ -80,7 +77,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         document.removeEventListener('mousemove', handleMouseMovement);
       };
     }
-  }, [isMobile, isDesktop, setSidebarOpen]);
+  }, [isMobile, isDesktop]);
   
   const isActiveRoute = (path: string) => {
     return location.pathname === path;
@@ -141,6 +138,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     setIsCollapsed(!isCollapsed);
   };
 
+  // Main layout component with sidebar and content
   return (
     <SidebarProvider defaultOpen={isDesktop}>
       <div className="flex min-h-screen w-full bg-background">
