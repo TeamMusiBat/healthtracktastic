@@ -38,6 +38,7 @@ const Users = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // State for new user form
   const [newUser, setNewUser] = useState({
@@ -57,7 +58,11 @@ const Users = () => {
       try {
         if (navigator.onLine) {
           const fetchedUsers = await ApiService.getUsers();
+          console.log("Fetched users:", fetchedUsers);
           setUsers(fetchedUsers);
+          
+          // Cache users for offline mode
+          localStorage.setItem("cached_users", JSON.stringify(fetchedUsers));
         } else {
           toast.warning("You are offline. User data may not be up to date.");
           // Try to use cached data if available
@@ -84,9 +89,9 @@ const Users = () => {
       return false;
     }
     
-    return u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.role.toLowerCase().includes(searchQuery.toLowerCase());
+    return u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      u.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      u.role?.toLowerCase().includes(searchQuery.toLowerCase());
   });
   
   const handleAddUser = async () => {
@@ -126,6 +131,8 @@ const Users = () => {
         return;
       }
       
+      setIsSubmitting(true);
+      
       // Add user via API
       const success = await ApiService.addUser(userData);
       
@@ -155,7 +162,9 @@ const Users = () => {
       }
     } catch (error) {
       console.error("Add user error:", error);
-      toast.error("Failed to add user. Please try again.");
+      toast.error(`Failed to add user: ${(error as Error).message}`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
   
@@ -349,11 +358,12 @@ const Users = () => {
             
             <DialogFooter>
               <Button3d 
-                onClick={handleAddUser} 
+                onClick={handleAddUser}
+                disabled={isSubmitting}
                 variant="3d" 
-                className="bg-green-600 text-white border-b-4 border-green-800 hover:bg-green-700"
+                className="bg-green-600 text-white border-b-4 border-green-800 hover:bg-green-700 disabled:opacity-50"
               >
-                Add User
+                {isSubmitting ? 'Adding...' : 'Add User'}
               </Button3d>
             </DialogFooter>
           </DialogContent>
@@ -388,13 +398,13 @@ const Users = () => {
       {filteredUsers.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredUsers.map((u) => (
-            <Card key={u.id} className="bg-white border-border shadow hover:shadow-lg transition-shadow">
+            <Card key={u.id || u.username} className="bg-white border-border shadow hover:shadow-lg transition-shadow">
               <CardHeader className="pb-2 bg-white text-foreground">
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-2">
                     <UserCircle size={36} className="text-primary" />
                     <div>
-                      <CardTitle className="text-base text-foreground">{u.name}</CardTitle>
+                      <CardTitle className="text-base text-foreground">{u.name || 'Unnamed'}</CardTitle>
                       <CardDescription className="text-xs text-muted-foreground">@{u.username}</CardDescription>
                     </div>
                   </div>
@@ -421,7 +431,7 @@ const Users = () => {
                   </div>
                   
                   <div className="text-muted-foreground font-medium">Designation</div>
-                  <div className="font-medium text-foreground">{u.designation || u.role}</div>
+                  <div className="font-medium text-foreground">{u.designation || u.role || 'Not specified'}</div>
                   
                   {u.email && (
                     <>

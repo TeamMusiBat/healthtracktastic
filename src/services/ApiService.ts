@@ -4,7 +4,7 @@ import { AwarenessSession, ChildScreening } from "@/contexts/HealthDataContext";
 import { toast } from "sonner";
 
 class ApiService {
-  // Base API URL - Updated to use your domain
+  // Base API URL
   private apiBaseUrl = "https://healthbyasif.buylevi.xyz/api";
   private currentUser: User | null = null;
   
@@ -21,6 +21,8 @@ class ApiService {
         throw new Error("You are offline. Please check your internet connection.");
       }
       
+      console.log(`Making API request to: ${this.apiBaseUrl}/${url}`);
+      
       const response = await fetch(`${this.apiBaseUrl}/${url}`, {
         ...options,
         headers: {
@@ -29,16 +31,24 @@ class ApiService {
         },
       });
       
+      // Check for non-OK status
+      if (!response.ok) {
+        console.error(`API error: ${response.status} ${response.statusText}`);
+        throw new Error(`API request failed with status ${response.status}`);
+      }
+      
       // Handle empty responses gracefully
       const text = await response.text();
+      console.log(`API response: ${text}`);
+      
       if (!text) {
         throw new Error("Empty response from server");
       }
       
       try {
         const data = JSON.parse(text);
-        if (!data.success) {
-          throw new Error(data.message || "API request failed");
+        if (!data.success && data.message) {
+          throw new Error(data.message);
         }
         return data;
       } catch (parseError) {
@@ -58,6 +68,7 @@ class ApiService {
       return result.data || [];
     } catch (error) {
       console.error("Failed to fetch users:", error);
+      toast.error(`Failed to fetch users: ${(error as Error).message}`);
       return [];
     }
   }
@@ -72,13 +83,22 @@ class ApiService {
     designation?: string;
   }): Promise<boolean> {
     try {
-      await this.request("users.php", {
+      console.log("Adding user with data:", userData);
+      const result = await this.request<{ success: boolean; message: string; id?: string }>("users.php", {
         method: "POST",
         body: JSON.stringify(userData),
       });
-      return true;
+      
+      if (result.success) {
+        toast.success("User added successfully");
+        return true;
+      } else {
+        toast.error(result.message || "Failed to add user");
+        return false;
+      }
     } catch (error) {
       console.error("Add user error:", error);
+      toast.error(`Failed to add user: ${(error as Error).message}`);
       return false;
     }
   }
@@ -122,7 +142,6 @@ class ApiService {
     }
   }
   
-  // Health data API methods
   async syncData(userId: string, data: {
     sessions?: AwarenessSession[];
     screenings?: ChildScreening[];

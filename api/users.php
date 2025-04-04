@@ -2,9 +2,6 @@
 <?php
 include 'db_config.php';
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE');
-header('Access-Control-Allow-Headers: Content-Type');
 
 // Get request method
 $method = $_SERVER['REQUEST_METHOD'];
@@ -16,7 +13,7 @@ switch ($method) {
         $result = $conn->query($sql);
         
         $users = [];
-        if ($result->num_rows > 0) {
+        if ($result && $result->num_rows > 0) {
             while($row = $result->fetch_assoc()) {
                 // Don't include password in response
                 unset($row['password']);
@@ -30,6 +27,9 @@ switch ($method) {
     case 'POST':
         // Get POST data
         $data = json_decode(file_get_contents('php://input'), true);
+        
+        // Debug
+        error_log("Received data: " . print_r($data, true));
         
         // Validate required fields
         if (!isset($data['username']) || !isset($data['name']) || !isset($data['role']) || !isset($data['password'])) {
@@ -55,16 +55,27 @@ switch ($method) {
         // Insert user
         $sql = "INSERT INTO users (username, name, email, role, password, designation, phoneNumber) VALUES (?, ?, ?, ?, ?, ?, ?)";
         $stmt = $conn->prepare($sql);
-        $email = isset($data['email']) ? $data['email'] : null;
-        $designation = isset($data['designation']) ? $data['designation'] : null;
-        $phoneNumber = isset($data['phoneNumber']) ? $data['phoneNumber'] : null;
+        $email = isset($data['email']) ? $data['email'] : '';
+        $designation = isset($data['designation']) ? $data['designation'] : '';
+        $phoneNumber = isset($data['phoneNumber']) ? $data['phoneNumber'] : '';
         
         $stmt->bind_param("sssssss", $data['username'], $data['name'], $email, $data['role'], $hashedPassword, $designation, $phoneNumber);
         
         if ($stmt->execute()) {
-            echo json_encode(["success" => true, "message" => "User created successfully"]);
+            // Get the newly created user's ID
+            $userId = $conn->insert_id;
+            
+            echo json_encode([
+                "success" => true, 
+                "message" => "User created successfully", 
+                "id" => $userId
+            ]);
         } else {
-            echo json_encode(["success" => false, "message" => "Error: " . $stmt->error]);
+            error_log("SQL Error: " . $stmt->error);
+            echo json_encode([
+                "success" => false, 
+                "message" => "Error: " . $stmt->error
+            ]);
         }
         break;
         
