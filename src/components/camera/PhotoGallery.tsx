@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -16,21 +15,13 @@ import {
   X
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { CameraMetadata } from './CameraView';
 
-interface PhotoMetadata {
-  id: string;
-  timestamp: string;
-  location: {
-    latitude: number | null;
-    longitude: number | null;
-    address: string;
-  };
-}
-
+// Replace the PhotoMetadata with CameraMetadata from CameraView
 interface Photo {
   id: string;
   src: string;
-  metadata: PhotoMetadata;
+  metadata: CameraMetadata;
 }
 
 interface PhotoGalleryProps {
