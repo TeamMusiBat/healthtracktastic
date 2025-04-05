@@ -8,6 +8,7 @@ import { GPSOverlay } from './camera/GPSOverlay';
 import { ColorPicker } from './camera/ColorPicker';
 import { PhotoGallery } from './camera/PhotoGallery';
 import { MapView } from './camera/MapView';
+import type { CameraMetadata } from './camera/CameraView';
 
 export {
   Layout,
@@ -18,5 +19,6 @@ export {
   GPSOverlay,
   ColorPicker,
   PhotoGallery,
-  MapView
+  MapView,
+  CameraMetadata
 };
