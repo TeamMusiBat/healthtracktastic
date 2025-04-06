@@ -31,9 +31,9 @@ export const GPSOverlay: React.FC<GPSOverlayProps> = ({
       <p className="text-xs opacity-80">
         {locationData.location.address}
       </p>
-      {locationData.weather && (
-        <p className="text-xs mt-1">
-          {locationData.weather.condition} {locationData.weather.temperature}
+      {locationData.note && (
+        <p className="text-xs mt-1 font-medium">
+          Note: {locationData.note}
         </p>
       )}
     </div>
