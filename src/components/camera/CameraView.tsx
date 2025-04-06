@@ -32,7 +32,7 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
-  const [isCameraActive, setIsCameraActive] = useState(false);
+  const [isCameraActive, setIsCameraActive] = useState(true);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [overlayPosition, setOverlayPosition] = useState({ x: 10, y: 10 });
@@ -46,6 +46,7 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
       address: 'Retrieving location...'
     }
   });
+  const [cameraFacingMode, setCameraFacingMode] = useState<'user' | 'environment'>('user');
 
   // Request camera access
   useEffect(() => {
@@ -53,9 +54,9 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ 
           video: { 
-            facingMode: 'environment',
-            width: { ideal: 1920 },
-            height: { ideal: 1080 }
+            facingMode: cameraFacingMode,
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
           }, 
           audio: false 
         });
@@ -63,7 +64,6 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           setHasPermission(true);
-          setIsCameraActive(true);
         }
       } catch (err) {
         console.error("Failed to get camera permission:", err);
@@ -83,7 +83,7 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
         stream.getTracks().forEach(track => track.stop());
       }
     };
-  }, [isCameraActive]);
+  }, [isCameraActive, cameraFacingMode]);
 
   // Get location data
   useEffect(() => {
@@ -102,13 +102,24 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
           
           // Get address using reverse geocoding
           try {
+            // Add cache-busting parameter to avoid CORS issues
+            const timestamp = new Date().getTime();
             const response = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
-              { headers: { 'Accept-Language': 'en-US,en;q=0.9' } }
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1&_=${timestamp}`,
+              { 
+                headers: { 
+                  'Accept-Language': 'en-US,en;q=0.9',
+                  'User-Agent': 'HealthTracktastic GPS Camera App' 
+                }
+              }
             );
             
+            if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            
             const data = await response.json();
-            const address = data.display_name || 'Unknown location';
+            const address = data.display_name || 'Address found';
             
             // Get weather data (simplified - in real app would use a weather API)
             const weather = {
@@ -131,6 +142,8 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
               weather,
               compass
             });
+            
+            toast.success("Location updated successfully");
           } catch (error) {
             console.error("Error fetching location details:", error);
             setLocationData({
@@ -141,6 +154,8 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
                 address: 'Location found, address unavailable'
               }
             });
+            
+            toast.warning("Got coordinates, but couldn't get address details");
           }
           setIsLoading(false);
         },
@@ -167,6 +182,18 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
       toast.error("Geolocation is not supported by this browser");
       setIsLoading(false);
     }
+  };
+
+  const flipCamera = () => {
+    // First stop the current stream
+    if (videoRef.current?.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+    
+    // Toggle camera mode
+    setCameraFacingMode(current => current === 'user' ? 'environment' : 'user');
   };
 
   const captureImage = () => {
@@ -214,6 +241,7 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
         
         if (onImageCapture) {
           onImageCapture(dataURL, locationData);
+          toast.success("Photo captured and saved to gallery");
         }
       }
     }
@@ -297,6 +325,7 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
               ref={videoRef}
               autoPlay 
               playsInline 
+              muted
               className="w-full h-full object-cover"
             />
             <DragDropContext onDragEnd={handleDragEnd}>
@@ -360,11 +389,18 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
                 <Camera className="mr-2 h-5 w-5" /> Capture
               </Button>
               <Button 
+                onClick={flipCamera}
+                variant="outline" 
+                className="text-primary-foreground border-primary-foreground hover:bg-primary/20"
+              >
+                <RefreshCw className="mr-2 h-4 w-4" /> Flip Camera
+              </Button>
+              <Button 
                 onClick={updateLocation} 
                 variant="outline" 
                 className="text-primary-foreground border-primary-foreground hover:bg-primary/20"
               >
-                <RefreshCw className="mr-2 h-4 w-4" /> Refresh Location
+                <MapPin className="mr-2 h-4 w-4" /> Refresh Location
               </Button>
             </>
           ) : (

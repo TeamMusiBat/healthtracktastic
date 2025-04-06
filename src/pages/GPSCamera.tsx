@@ -2,10 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CameraView, CameraMetadata, PhotoGallery, MapView } from '@/components';
+import { CameraView, PhotoGallery, MapView } from '@/components';
 import { Camera, Image, Map } from 'lucide-react';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
+import type { CameraMetadata } from '@/components/camera/CameraView';
 
 interface Photo {
   id: string;
