@@ -16,10 +16,6 @@ interface Photo {
 
 const GPSCamera: React.FC = () => {
   const [photos, setPhotos] = useState<Photo[]>([]);
-  const [currentLocation, setCurrentLocation] = useState<{latitude: number | null, longitude: number | null}>({
-    latitude: null,
-    longitude: null
-  });
   const { user } = useAuth();
 
   // Load saved photos from localStorage on component mount
@@ -31,23 +27,6 @@ const GPSCamera: React.FC = () => {
       } catch (error) {
         console.error('Failed to parse saved photos', error);
       }
-    }
-
-    // Get current location on component mount
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setCurrentLocation({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude
-          });
-        },
-        (error) => {
-          console.error('Error getting location:', error);
-          toast.error('Could not get your location. Please check permissions.');
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
     }
   }, []);
 
@@ -108,7 +87,10 @@ const GPSCamera: React.FC = () => {
         <TabsContent value="map" className="min-h-[60vh]">
           <MapView 
             locations={mapLocations} 
-            currentLocation={currentLocation}
+            currentLocation={{
+              latitude: null, // Would be set to real location in production
+              longitude: null
+            }} 
           />
         </TabsContent>
       </Tabs>
