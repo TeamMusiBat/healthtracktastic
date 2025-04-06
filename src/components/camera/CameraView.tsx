@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect } from 'react';
 import { Camera, Image, MapPin, RefreshCw, Share2, Settings, Download, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -99,11 +100,13 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
-          const { latitude, longitude } = position.coords;
+          const { latitude, longitude, accuracy } = position.coords;
+          console.log(`Got raw position: ${latitude}, ${longitude} (accuracy: ${accuracy}m)`);
           
           // Get address using reverse geocoding
           try {
-            // Add cache-busting parameter to avoid CORS issues
+            // Use a more accurate reverse geocoding API with high zoom level
+            // Add cache-busting parameter and custom User-Agent
             const timestamp = new Date().getTime();
             const response = await fetch(
               `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1&_=${timestamp}`,
@@ -120,29 +123,57 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
             }
             
             const data = await response.json();
-            // Use more detailed address format
+            console.log("Geocoding API response:", data);
+            
+            // Format detailed address from components
             let address = '';
             
             if (data.address) {
               const addr = data.address;
               const parts = [];
               
+              // Build address from most specific to least specific components
+              if (addr.house_number) parts.push(addr.house_number);
               if (addr.road) parts.push(addr.road);
+              if (addr.hamlet) parts.push(addr.hamlet);
+              if (addr.village) parts.push(addr.village);
               if (addr.suburb) parts.push(addr.suburb);
               if (addr.town) parts.push(addr.town);
-              if (addr.city) parts.push(addr.city);
+              if (addr.city && !parts.includes(addr.city)) parts.push(addr.city);
+              if (addr.county) parts.push(addr.county);
               if (addr.state) parts.push(addr.state);
-              if (addr.country) parts.push(addr.country);
               
               address = parts.join(', ');
+              
+              // If we got no usable parts, fall back to the display name
+              if (!address && data.display_name) {
+                address = data.display_name;
+              }
+            } else if (data.display_name) {
+              address = data.display_name;
             } else {
-              address = data.display_name || 'Location found';
+              // Ultimate fallback
+              address = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
             }
             
             // Get compass direction (simplified)
             const compassDirections = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-            const compassIndex = Math.floor(Math.random() * compassDirections.length);
-            const compass = compassDirections[compassIndex];
+            let compass = '';
+            
+            if ('DeviceOrientationEvent' in window && 'webkitCompassHeading' in DeviceOrientationEvent.prototype) {
+              window.addEventListener('deviceorientation', function onOrientationChange(event) {
+                // @ts-ignore - webkitCompassHeading exists on Safari
+                const heading = event.webkitCompassHeading || Math.abs(event.alpha - 360);
+                if (heading) {
+                  const index = Math.round(heading / 45) % 8;
+                  compass = compassDirections[index];
+                }
+                window.removeEventListener('deviceorientation', onOrientationChange);
+              });
+            } else {
+              const compassIndex = Math.floor(Math.random() * compassDirections.length);
+              compass = compassDirections[compassIndex];
+            }
             
             setLocationData({
               timestamp: new Date().toISOString(),
@@ -174,7 +205,7 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
         },
         (error) => {
           console.error("Error getting location:", error);
-          toast.error("Could not get your location. Please check permissions.");
+          toast.error(`Could not get your location: ${error.message}. Please check permissions.`);
           setLocationData({
             timestamp: new Date().toISOString(),
             location: {
@@ -188,7 +219,7 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
         },
         {
           enableHighAccuracy: true,
-          timeout: 10000,
+          timeout: 15000,
           maximumAge: 0
         }
       );
@@ -328,10 +359,14 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
       clientX = (e as React.MouseEvent).clientX;
       clientY = (e as React.MouseEvent).clientY;
       
-      // For mouse events, set data to make drag possible
-      // Type checking is needed here since dataTransfer isn't available on all events
-      if ((e as React.DragEvent).dataTransfer) {
-        (e as React.DragEvent).dataTransfer.setData('text/plain', 'overlay');
+      // For mouse events, prevent default to make drag smoother
+      e.preventDefault();
+      
+      // Type checking for dataTransfer property
+      const dragEvent = e as React.DragEvent;
+      if (dragEvent.dataTransfer) {
+        dragEvent.dataTransfer.setData('text/plain', 'overlay');
+        dragEvent.dataTransfer.effectAllowed = 'move';
       }
     }
     

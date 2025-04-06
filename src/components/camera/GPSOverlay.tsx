@@ -20,6 +20,12 @@ export const GPSOverlay: React.FC<GPSOverlayProps> = ({
   const lat = locationData.location.latitude?.toFixed(6) || 'unknown';
   const lng = locationData.location.longitude?.toFixed(6) || 'unknown';
 
+  // Split the address into smaller lines if it's too long
+  const address = locationData.location.address || '';
+  const addressLines = address.length > 30 
+    ? address.split(', ').filter(Boolean)
+    : [address];
+
   return (
     <div className="text-white" style={{ fontSize: `${fontSize}px`, color: textColor }}>
       <p className="font-bold mb-1">
@@ -28,9 +34,11 @@ export const GPSOverlay: React.FC<GPSOverlayProps> = ({
       <p className="mb-1">
         {lat}, {lng} {locationData.compass && `• ${locationData.compass}`}
       </p>
-      <p className="text-xs opacity-80">
-        {locationData.location.address}
-      </p>
+      {addressLines.map((line, index) => (
+        <p key={index} className="text-xs opacity-80">
+          {line}
+        </p>
+      ))}
       {locationData.note && (
         <p className="text-xs mt-1 font-medium">
           Note: {locationData.note}

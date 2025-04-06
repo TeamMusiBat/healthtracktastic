@@ -33,22 +33,51 @@ const GPSCamera: React.FC = () => {
       }
     }
 
-    // Get current location on component mount
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setCurrentLocation({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude
-          });
-        },
-        (error) => {
-          console.error('Error getting location:', error);
-          toast.error('Could not get your location. Please check permissions.');
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    }
+    // Set up continuous location tracking
+    const setupLocationTracking = () => {
+      if ('geolocation' in navigator) {
+        // Get initial position with high accuracy
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            setCurrentLocation({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude
+            });
+          },
+          (error) => {
+            console.error('Error getting initial location:', error);
+            toast.error(`Could not get your location: ${error.message}. Please check permissions.`);
+          },
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        );
+        
+        // Set up a watcher for continuous updates
+        const watchId = navigator.geolocation.watchPosition(
+          (position) => {
+            const { latitude, longitude, accuracy } = position.coords;
+            console.log(`Location updated: ${latitude}, ${longitude} (accuracy: ${accuracy}m)`);
+            
+            setCurrentLocation({
+              latitude: latitude,
+              longitude: longitude
+            });
+          },
+          (error) => {
+            console.error('Error watching location:', error);
+          },
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        );
+        
+        // Clean up watcher on component unmount
+        return () => navigator.geolocation.clearWatch(watchId);
+      } else {
+        toast.error('Geolocation is not supported by this browser');
+        return undefined;
+      }
+    };
+    
+    const cleanupFn = setupLocationTracking();
+    return cleanupFn;
   }, []);
 
   // Save photos to localStorage whenever the photos array changes
