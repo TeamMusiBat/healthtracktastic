@@ -4,6 +4,8 @@ import { Camera, Image, MapPin, RefreshCw, Share2, Settings, Download, X } from 
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Slider } from '@/components/ui/slider';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { ColorPicker } from './ColorPicker';
 import { GPSOverlay } from './GPSOverlay';
 import { Card } from '@/components/ui/card';
@@ -21,11 +23,8 @@ export interface CameraMetadata {
     longitude: number | null;
     address: string;
   };
-  weather?: {
-    temperature?: string;
-    condition?: string;
-  };
   compass?: string;
+  note?: string;
 }
 
 export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
@@ -38,6 +37,7 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
   const [overlayPosition, setOverlayPosition] = useState({ x: 10, y: 10 });
   const [textColor, setTextColor] = useState('#ffffff');
   const [fontSize, setFontSize] = useState(16);
+  const [note, setNote] = useState('');
   const [locationData, setLocationData] = useState<CameraMetadata>({
     timestamp: new Date().toISOString(),
     location: {
@@ -46,7 +46,7 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
       address: 'Retrieving location...'
     }
   });
-  const [cameraFacingMode, setCameraFacingMode] = useState<'user' | 'environment'>('user');
+  const [cameraFacingMode, setCameraFacingMode] = useState<'user' | 'environment'>('environment');
 
   // Request camera access
   useEffect(() => {
@@ -121,12 +121,6 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
             const data = await response.json();
             const address = data.display_name || 'Address found';
             
-            // Get weather data (simplified - in real app would use a weather API)
-            const weather = {
-              temperature: '24°C',  // Placeholder
-              condition: 'Sunny'    // Placeholder
-            };
-            
             // Get compass direction (simplified)
             const compassDirections = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
             const compassIndex = Math.floor(Math.random() * compassDirections.length);
@@ -139,8 +133,8 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
                 longitude,
                 address
               },
-              weather,
-              compass
+              compass,
+              note
             });
             
             toast.success("Location updated successfully");
@@ -152,7 +146,8 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
                 latitude,
                 longitude,
                 address: 'Location found, address unavailable'
-              }
+              },
+              note
             });
             
             toast.warning("Got coordinates, but couldn't get address details");
@@ -168,7 +163,8 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
               latitude: null,
               longitude: null,
               address: 'Location unavailable'
-            }
+            },
+            note
           });
           setIsLoading(false);
         },
@@ -235,12 +231,22 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
           });
         }
         
+        if (note) {
+          context.fillText(`Note: ${note}`, textX, textY + (fontSize + 5) * 6);
+        }
+        
         // Get the data URL from the canvas
         const dataURL = canvas.toDataURL('image/jpeg');
         setCapturedImage(dataURL);
         
+        // Update location data to include the note
+        const updatedMetadata = {
+          ...locationData,
+          note: note
+        };
+        
         if (onImageCapture) {
-          onImageCapture(dataURL, locationData);
+          onImageCapture(dataURL, updatedMetadata);
           toast.success("Photo captured and saved to gallery");
         }
       }
@@ -289,10 +295,10 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
   const handleDragEnd = (result: any) => {
     if (!result.destination) return;
     
-    // Calculate new position based on drag result
+    // Set the new position directly based on the drop coordinates
     setOverlayPosition({
-      x: result.destination.x || overlayPosition.x,
-      y: result.destination.y || overlayPosition.y
+      x: result.destination.x || 10,
+      y: result.destination.y || 10
     });
   };
 
@@ -328,41 +334,44 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
               muted
               className="w-full h-full object-cover"
             />
-            <DragDropContext onDragEnd={handleDragEnd}>
-              <Droppable droppableId="overlay-area">
-                {(provided) => (
-                  <div
-                    ref={provided.innerRef}
-                    {...provided.droppableProps}
-                    className="absolute inset-0"
-                  >
-                    <Draggable draggableId="gps-overlay" index={0}>
-                      {(provided) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                          style={{
-                            position: 'absolute',
-                            left: overlayPosition.x,
-                            top: overlayPosition.y,
-                            ...provided.draggableProps.style
-                          }}
-                          className="p-2 rounded bg-black/30 cursor-move"
-                        >
-                          <GPSOverlay 
-                            locationData={locationData} 
-                            fontSize={fontSize}
-                            textColor={textColor}
-                          />
-                        </div>
-                      )}
-                    </Draggable>
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
-            </DragDropContext>
+            
+            <div
+              className="absolute p-2 rounded bg-black/30 cursor-move"
+              style={{
+                position: 'absolute',
+                left: overlayPosition.x,
+                top: overlayPosition.y,
+                touchAction: 'none'
+              }}
+              draggable="true"
+              onDragStart={(e) => {
+                // Set data to make drag possible
+                e.dataTransfer.setData('text/plain', 'overlay');
+              }}
+              onDragEnd={(e) => {
+                // Get drop position
+                const x = e.clientX;
+                const y = e.clientY;
+                const container = e.currentTarget.parentElement;
+                
+                if (container) {
+                  const rect = container.getBoundingClientRect();
+                  const relativeX = Math.max(0, Math.min(x - rect.left, rect.width - 100));
+                  const relativeY = Math.max(0, Math.min(y - rect.top, rect.height - 100));
+                  
+                  setOverlayPosition({
+                    x: relativeX,
+                    y: relativeY
+                  });
+                }
+              }}
+            >
+              <GPSOverlay 
+                locationData={locationData} 
+                fontSize={fontSize}
+                textColor={textColor}
+              />
+            </div>
           </div>
         ) : (
           <div className="relative">
@@ -447,6 +456,16 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
               </div>
               
               <div>
+                <label className="text-sm font-medium mb-2 block">Note (Optional)</label>
+                <Textarea
+                  placeholder="Add a note about this image..."
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  className="resize-none"
+                />
+              </div>
+              
+              <div>
                 <label className="text-sm font-medium mb-2 block">
                   Overlay Position
                 </label>
@@ -472,12 +491,6 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
                     <div>{locationData.compass}</div>
                   </>
                 )}
-                {locationData.weather && (
-                  <>
-                    <div className="font-medium">Weather:</div>
-                    <div>{locationData.weather.condition}, {locationData.weather.temperature}</div>
-                  </>
-                )}
               </div>
               <Button 
                 onClick={updateLocation}
@@ -495,3 +508,4 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
     </div>
   );
 };
+
