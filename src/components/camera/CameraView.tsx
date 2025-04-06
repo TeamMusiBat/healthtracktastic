@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect } from 'react';
 import { Camera, Image, MapPin, RefreshCw, Share2, Settings, Download, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -30,6 +29,7 @@ export interface CameraMetadata {
 export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [isCameraActive, setIsCameraActive] = useState(true);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
@@ -120,7 +120,24 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
             }
             
             const data = await response.json();
-            const address = data.display_name || 'Address found';
+            // Use more detailed address format
+            let address = '';
+            
+            if (data.address) {
+              const addr = data.address;
+              const parts = [];
+              
+              if (addr.road) parts.push(addr.road);
+              if (addr.suburb) parts.push(addr.suburb);
+              if (addr.town) parts.push(addr.town);
+              if (addr.city) parts.push(addr.city);
+              if (addr.state) parts.push(addr.state);
+              if (addr.country) parts.push(addr.country);
+              
+              address = parts.join(', ');
+            } else {
+              address = data.display_name || 'Location found';
+            }
             
             // Get compass direction (simplified)
             const compassDirections = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
@@ -146,7 +163,7 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
               location: {
                 latitude,
                 longitude,
-                address: 'Location found, address unavailable'
+                address: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
               },
               note
             });
@@ -293,25 +310,72 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
     }
   };
 
-  // Handle drag start
-  const handleDragStart = () => {
+  // Improved drag implementation with touch support
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  
+  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
     setIsDragging(true);
+    
+    // Get starting position
+    let clientX, clientY;
+    
+    if ('touches' in e) {
+      // Touch event
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      // Mouse event
+      clientX = e.clientX;
+      clientY = e.clientY;
+      
+      // For mouse events, set data to make drag possible
+      e.dataTransfer?.setData('text/plain', 'overlay');
+    }
+    
+    setDragStart({
+      x: clientX - overlayPosition.x,
+      y: clientY - overlayPosition.y
+    });
   };
-
-  // Handle drag end
-  const handleDragEnd = (e: React.DragEvent) => {
+  
+  const handleDragMove = (e: React.TouchEvent) => {
+    if (!isDragging || !e.touches[0]) return;
+    
+    e.preventDefault();
+    
+    const container = overlayRef.current?.parentElement;
+    if (!container) return;
+    
+    const rect = container.getBoundingClientRect();
+    const clientX = e.touches[0].clientX;
+    const clientY = e.touches[0].clientY;
+    
+    // Calculate new position
+    const newX = Math.max(0, Math.min(clientX - dragStart.x, rect.width - 150));
+    const newY = Math.max(0, Math.min(clientY - dragStart.y, rect.height - 150));
+    
+    setOverlayPosition({
+      x: newX,
+      y: newY
+    });
+  };
+  
+  const handleDragEnd = (e: React.MouseEvent | React.TouchEvent) => {
     setIsDragging(false);
     
-    // Get drop position
-    const container = e.currentTarget.parentElement;
-    if (container) {
+    // Handle mouse events
+    if (!('touches' in e) && e instanceof MouseEvent) {
+      const container = overlayRef.current?.parentElement;
+      if (!container) return;
+      
       const rect = container.getBoundingClientRect();
-      const relativeX = Math.max(0, Math.min(e.clientX - rect.left, rect.width - 100));
-      const relativeY = Math.max(0, Math.min(e.clientY - rect.top, rect.height - 100));
+      
+      const newX = Math.max(0, Math.min(e.clientX - dragStart.x, rect.width - 150));
+      const newY = Math.max(0, Math.min(e.clientY - dragStart.y, rect.height - 150));
       
       setOverlayPosition({
-        x: relativeX,
-        y: relativeY
+        x: newX,
+        y: newY
       });
     }
   };
@@ -350,6 +414,7 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
             />
             
             <div
+              ref={overlayRef}
               className="absolute p-2 rounded bg-black/30 cursor-move"
               style={{
                 position: 'absolute',
@@ -359,8 +424,11 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
                 zIndex: 5
               }}
               draggable
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
+              onDragStart={handleDragStart as any}
+              onDragEnd={handleDragEnd as any}
+              onTouchStart={handleDragStart as any}
+              onTouchMove={handleDragMove}
+              onTouchEnd={handleDragEnd as any}
             >
               <GPSOverlay 
                 locationData={locationData} 
