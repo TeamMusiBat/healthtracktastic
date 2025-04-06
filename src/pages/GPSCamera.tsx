@@ -88,7 +88,7 @@ const GPSCamera: React.FC = () => {
           <MapView 
             locations={mapLocations} 
             currentLocation={{
-              latitude: null, // Would be set to real location in production
+              latitude: null,
               longitude: null
             }} 
           />
@@ -99,4 +99,3 @@ const GPSCamera: React.FC = () => {
 };
 
 export default GPSCamera;
-

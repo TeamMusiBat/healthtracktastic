@@ -39,4 +39,3 @@ export const GPSOverlay: React.FC<GPSOverlayProps> = ({
     </div>
   );
 };
-

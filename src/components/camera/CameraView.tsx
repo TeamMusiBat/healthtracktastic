@@ -35,6 +35,7 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [overlayPosition, setOverlayPosition] = useState({ x: 10, y: 10 });
+  const [isDragging, setIsDragging] = useState(false);
   const [textColor, setTextColor] = useState('#ffffff');
   const [fontSize, setFontSize] = useState(16);
   const [note, setNote] = useState('');
@@ -72,7 +73,7 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
       }
     }
 
-    if (isCameraActive && !videoRef.current?.srcObject) {
+    if (isCameraActive && !capturedImage) {
       setupCamera();
     }
 
@@ -83,7 +84,7 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
         stream.getTracks().forEach(track => track.stop());
       }
     };
-  }, [isCameraActive, cameraFacingMode]);
+  }, [isCameraActive, cameraFacingMode, capturedImage]);
 
   // Get location data
   useEffect(() => {
@@ -292,14 +293,27 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
     }
   };
 
-  const handleDragEnd = (result: any) => {
-    if (!result.destination) return;
+  // Handle drag start
+  const handleDragStart = () => {
+    setIsDragging(true);
+  };
+
+  // Handle drag end
+  const handleDragEnd = (e: React.DragEvent) => {
+    setIsDragging(false);
     
-    // Set the new position directly based on the drop coordinates
-    setOverlayPosition({
-      x: result.destination.x || 10,
-      y: result.destination.y || 10
-    });
+    // Get drop position
+    const container = e.currentTarget.parentElement;
+    if (container) {
+      const rect = container.getBoundingClientRect();
+      const relativeX = Math.max(0, Math.min(e.clientX - rect.left, rect.width - 100));
+      const relativeY = Math.max(0, Math.min(e.clientY - rect.top, rect.height - 100));
+      
+      setOverlayPosition({
+        x: relativeX,
+        y: relativeY
+      });
+    }
   };
 
   if (hasPermission === false) {
@@ -310,7 +324,7 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
         <p className="text-center text-muted-foreground mb-4">
           Please allow camera access to use this feature.
         </p>
-        <Button onClick={() => setIsCameraActive(true)}>
+        <Button onClick={() => setHasPermission(null)}>
           Try Again
         </Button>
       </div>
@@ -341,30 +355,12 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
                 position: 'absolute',
                 left: overlayPosition.x,
                 top: overlayPosition.y,
-                touchAction: 'none'
+                touchAction: 'none',
+                zIndex: 5
               }}
-              draggable="true"
-              onDragStart={(e) => {
-                // Set data to make drag possible
-                e.dataTransfer.setData('text/plain', 'overlay');
-              }}
-              onDragEnd={(e) => {
-                // Get drop position
-                const x = e.clientX;
-                const y = e.clientY;
-                const container = e.currentTarget.parentElement;
-                
-                if (container) {
-                  const rect = container.getBoundingClientRect();
-                  const relativeX = Math.max(0, Math.min(x - rect.left, rect.width - 100));
-                  const relativeY = Math.max(0, Math.min(y - rect.top, rect.height - 100));
-                  
-                  setOverlayPosition({
-                    x: relativeX,
-                    y: relativeY
-                  });
-                }
-              }}
+              draggable
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
             >
               <GPSOverlay 
                 locationData={locationData} 
@@ -508,4 +504,3 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
     </div>
   );
 };
-
