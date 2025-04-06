@@ -325,11 +325,14 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
       clientY = e.touches[0].clientY;
     } else {
       // Mouse event
-      clientX = e.clientX;
-      clientY = e.clientY;
+      clientX = (e as React.MouseEvent).clientX;
+      clientY = (e as React.MouseEvent).clientY;
       
       // For mouse events, set data to make drag possible
-      e.dataTransfer?.setData('text/plain', 'overlay');
+      // Type checking is needed here since dataTransfer isn't available on all events
+      if ((e as React.DragEvent).dataTransfer) {
+        (e as React.DragEvent).dataTransfer.setData('text/plain', 'overlay');
+      }
     }
     
     setDragStart({
@@ -364,14 +367,16 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
     setIsDragging(false);
     
     // Handle mouse events
-    if (!('touches' in e) && e instanceof MouseEvent) {
+    if (!('touches' in e)) {
       const container = overlayRef.current?.parentElement;
       if (!container) return;
       
       const rect = container.getBoundingClientRect();
+      const clientX = (e as React.MouseEvent).clientX;
+      const clientY = (e as React.MouseEvent).clientY;
       
-      const newX = Math.max(0, Math.min(e.clientX - dragStart.x, rect.width - 150));
-      const newY = Math.max(0, Math.min(e.clientY - dragStart.y, rect.height - 150));
+      const newX = Math.max(0, Math.min(clientX - dragStart.x, rect.width - 150));
+      const newY = Math.max(0, Math.min(clientY - dragStart.y, rect.height - 150));
       
       setOverlayPosition({
         x: newX,
