@@ -33,7 +33,7 @@ const GPSCamera: React.FC = () => {
       }
     }
 
-    // Set up continuous location tracking
+    // Set up continuous location tracking with high accuracy
     const setupLocationTracking = () => {
       if ('geolocation' in navigator) {
         // Get initial position with high accuracy
@@ -43,15 +43,16 @@ const GPSCamera: React.FC = () => {
               latitude: position.coords.latitude,
               longitude: position.coords.longitude
             });
+            console.log(`Initial position: ${position.coords.latitude}, ${position.coords.longitude}`);
           },
           (error) => {
             console.error('Error getting initial location:', error);
             toast.error(`Could not get your location: ${error.message}. Please check permissions.`);
           },
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
         
-        // Set up a watcher for continuous updates
+        // Set up a watcher for continuous updates with maximum accuracy
         const watchId = navigator.geolocation.watchPosition(
           (position) => {
             const { latitude, longitude, accuracy } = position.coords;
@@ -65,7 +66,11 @@ const GPSCamera: React.FC = () => {
           (error) => {
             console.error('Error watching location:', error);
           },
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+          { 
+            enableHighAccuracy: true, 
+            timeout: 10000, 
+            maximumAge: 0
+          }
         );
         
         // Clean up watcher on component unmount
@@ -86,10 +91,21 @@ const GPSCamera: React.FC = () => {
   }, [photos]);
 
   const handleImageCapture = (imageSrc: string, metadata: CameraMetadata) => {
+    // Ensure we're using the most recent location data
+    const updatedMetadata = {
+      ...metadata,
+      location: {
+        ...metadata.location,
+        // Use currentLocation if available and more accurate
+        latitude: currentLocation.latitude || metadata.location.latitude,
+        longitude: currentLocation.longitude || metadata.location.longitude,
+      }
+    };
+    
     const newPhoto = {
       id: uuidv4(),
       src: imageSrc,
-      metadata,
+      metadata: updatedMetadata,
     };
     
     setPhotos(prevPhotos => [newPhoto, ...prevPhotos]);

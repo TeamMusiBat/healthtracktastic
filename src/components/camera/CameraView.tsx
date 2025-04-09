@@ -10,7 +10,8 @@ import { ColorPicker } from './ColorPicker';
 import { GPSOverlay } from './GPSOverlay';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 interface CameraViewProps {
   onImageCapture?: (image: string, metadata: CameraMetadata) => void;
@@ -36,10 +37,10 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [overlayPosition, setOverlayPosition] = useState({ x: 10, y: 10 });
-  const [isDragging, setIsDragging] = useState(false);
   const [textColor, setTextColor] = useState('#ffffff');
   const [fontSize, setFontSize] = useState(16);
   const [note, setNote] = useState('');
+  const [fixedOverlayPosition, setFixedOverlayPosition] = useState(true);
   const [locationData, setLocationData] = useState<CameraMetadata>({
     timestamp: new Date().toISOString(),
     location: {
@@ -105,15 +106,14 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
           
           // Get address using reverse geocoding
           try {
-            // Use a more accurate reverse geocoding API with high zoom level
-            // Add cache-busting parameter and custom User-Agent
-            const timestamp = new Date().getTime();
+            // Higher accuracy, no caching
             const response = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1&_=${timestamp}`,
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1&_=${new Date().getTime()}`,
               { 
                 headers: { 
                   'Accept-Language': 'en-US,en;q=0.9',
-                  'User-Agent': 'HealthTracktastic GPS Camera App' 
+                  'User-Agent': 'GPSCameraApp/1.0',
+                  'Cache-Control': 'no-cache, no-store, must-revalidate'
                 }
               }
             );
@@ -132,27 +132,23 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
               const addr = data.address;
               const parts = [];
               
-              // Build address from most specific to least specific components
-              if (addr.house_number) parts.push(addr.house_number);
+              // Use more specific fields first
               if (addr.road) parts.push(addr.road);
-              if (addr.hamlet) parts.push(addr.hamlet);
-              if (addr.village) parts.push(addr.village);
+              if (addr.neighbourhood) parts.push(addr.neighbourhood);
               if (addr.suburb) parts.push(addr.suburb);
-              if (addr.town) parts.push(addr.town);
-              if (addr.city && !parts.includes(addr.city)) parts.push(addr.city);
+              if (addr.village || addr.town || addr.city) {
+                parts.push(addr.village || addr.town || addr.city);
+              }
               if (addr.county) parts.push(addr.county);
               if (addr.state) parts.push(addr.state);
               
               address = parts.join(', ');
               
-              // If we got no usable parts, fall back to the display name
-              if (!address && data.display_name) {
-                address = data.display_name;
+              // If no usable parts, use raw coordinates
+              if (!address) {
+                address = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
               }
-            } else if (data.display_name) {
-              address = data.display_name;
             } else {
-              // Ultimate fallback
               address = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
             }
             
@@ -160,19 +156,16 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
             const compassDirections = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
             let compass = '';
             
-            if ('DeviceOrientationEvent' in window && 'webkitCompassHeading' in DeviceOrientationEvent.prototype) {
+            if ('DeviceOrientationEvent' in window) {
               window.addEventListener('deviceorientation', function onOrientationChange(event) {
-                // @ts-ignore - webkitCompassHeading exists on Safari
-                const heading = event.webkitCompassHeading || Math.abs(event.alpha - 360);
-                if (heading) {
+                if (event.alpha !== null) {
+                  // Standard compass heading calculation
+                  const heading = event.alpha;
                   const index = Math.round(heading / 45) % 8;
                   compass = compassDirections[index];
                 }
                 window.removeEventListener('deviceorientation', onOrientationChange);
               });
-            } else {
-              const compassIndex = Math.floor(Math.random() * compassDirections.length);
-              compass = compassDirections[compassIndex];
             }
             
             setLocationData({
@@ -199,7 +192,7 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
               note
             });
             
-            toast.warning("Got coordinates, but couldn't get address details");
+            toast.warning("Using raw coordinates only");
           }
           setIsLoading(false);
         },
@@ -219,7 +212,7 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
         },
         {
           enableHighAccuracy: true,
-          timeout: 15000,
+          timeout: 10000,
           maximumAge: 0
         }
       );
@@ -254,35 +247,6 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
         
         // Draw the video frame to the canvas
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-        // Add the GPS overlay to the image
-        context.font = `${fontSize}px Arial`;
-        context.fillStyle = textColor;
-        
-        const date = new Date();
-        const dateString = date.toLocaleDateString();
-        const timeString = date.toLocaleTimeString();
-        
-        const lat = locationData.location.latitude?.toFixed(6) || 'unknown';
-        const lng = locationData.location.longitude?.toFixed(6) || 'unknown';
-        
-        const textX = overlayPosition.x;
-        const textY = overlayPosition.y;
-        
-        context.fillText(`Date: ${dateString}`, textX, textY);
-        context.fillText(`Time: ${timeString}`, textX, textY + fontSize + 5);
-        context.fillText(`Lat: ${lat}, Lng: ${lng}`, textX, textY + (fontSize + 5) * 2);
-        
-        if (locationData.location.address) {
-          const addressLines = locationData.location.address.split(', ');
-          addressLines.forEach((line, i) => {
-            context.fillText(line, textX, textY + (fontSize + 5) * (3 + i));
-          });
-        }
-        
-        if (note) {
-          context.fillText(`Note: ${note}`, textX, textY + (fontSize + 5) * 6);
-        }
         
         // Get the data URL from the canvas
         const dataURL = canvas.toDataURL('image/jpeg');
@@ -341,82 +305,26 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
     }
   };
 
-  // Improved drag implementation with touch support
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  
-  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
-    setIsDragging(true);
-    
-    // Get starting position
-    let clientX, clientY;
-    
-    if ('touches' in e) {
-      // Touch event
-      clientX = e.touches[0].clientX;
-      clientY = e.touches[0].clientY;
+  // Get the overlay position based on settings
+  const getOverlayPosition = () => {
+    if (fixedOverlayPosition) {
+      // Fixed at bottom
+      return { 
+        position: 'absolute',
+        left: '10px', 
+        bottom: '70px',
+        top: 'auto',
+        right: 'auto'
+      };
     } else {
-      // Mouse event
-      clientX = (e as React.MouseEvent).clientX;
-      clientY = (e as React.MouseEvent).clientY;
-      
-      // For mouse events, prevent default to make drag smoother
-      e.preventDefault();
-      
-      // Type checking for dataTransfer property
-      const dragEvent = e as React.DragEvent;
-      if (dragEvent.dataTransfer) {
-        dragEvent.dataTransfer.setData('text/plain', 'overlay');
-        dragEvent.dataTransfer.effectAllowed = 'move';
-      }
-    }
-    
-    setDragStart({
-      x: clientX - overlayPosition.x,
-      y: clientY - overlayPosition.y
-    });
-  };
-  
-  const handleDragMove = (e: React.TouchEvent) => {
-    if (!isDragging || !e.touches[0]) return;
-    
-    e.preventDefault();
-    
-    const container = overlayRef.current?.parentElement;
-    if (!container) return;
-    
-    const rect = container.getBoundingClientRect();
-    const clientX = e.touches[0].clientX;
-    const clientY = e.touches[0].clientY;
-    
-    // Calculate new position
-    const newX = Math.max(0, Math.min(clientX - dragStart.x, rect.width - 150));
-    const newY = Math.max(0, Math.min(clientY - dragStart.y, rect.height - 150));
-    
-    setOverlayPosition({
-      x: newX,
-      y: newY
-    });
-  };
-  
-  const handleDragEnd = (e: React.MouseEvent | React.TouchEvent) => {
-    setIsDragging(false);
-    
-    // Handle mouse events
-    if (!('touches' in e)) {
-      const container = overlayRef.current?.parentElement;
-      if (!container) return;
-      
-      const rect = container.getBoundingClientRect();
-      const clientX = (e as React.MouseEvent).clientX;
-      const clientY = (e as React.MouseEvent).clientY;
-      
-      const newX = Math.max(0, Math.min(clientX - dragStart.x, rect.width - 150));
-      const newY = Math.max(0, Math.min(clientY - dragStart.y, rect.height - 150));
-      
-      setOverlayPosition({
-        x: newX,
-        y: newY
-      });
+      // Custom position
+      return {
+        position: 'absolute',
+        left: `${overlayPosition.x}px`,
+        top: `${overlayPosition.y}px`,
+        right: 'auto',
+        bottom: 'auto'
+      };
     }
   };
 
@@ -455,20 +363,12 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
             
             <div
               ref={overlayRef}
-              className="absolute p-2 rounded bg-black/30 cursor-move"
+              className="absolute p-2 rounded bg-black/30"
               style={{
-                position: 'absolute',
-                left: overlayPosition.x,
-                top: overlayPosition.y,
+                ...getOverlayPosition() as any,
                 touchAction: 'none',
                 zIndex: 5
               }}
-              draggable
-              onDragStart={handleDragStart as any}
-              onDragEnd={handleDragEnd as any}
-              onTouchStart={handleDragStart as any}
-              onTouchMove={handleDragMove}
-              onTouchEnd={handleDragEnd as any}
             >
               <GPSOverlay 
                 locationData={locationData} 
@@ -559,6 +459,15 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
                 />
               </div>
               
+              <div className="flex items-center space-x-2 py-2">
+                <Switch
+                  id="fixed-position"
+                  checked={fixedOverlayPosition}
+                  onCheckedChange={setFixedOverlayPosition}
+                />
+                <Label htmlFor="fixed-position">Lock overlay at bottom (recommended)</Label>
+              </div>
+              
               <div>
                 <label className="text-sm font-medium mb-2 block">Note (Optional)</label>
                 <Textarea
@@ -567,15 +476,6 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
                   onChange={(e) => setNote(e.target.value)}
                   className="resize-none"
                 />
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium mb-2 block">
-                  Overlay Position
-                </label>
-                <p className="text-sm text-muted-foreground mb-2">
-                  Drag the overlay directly on the preview to reposition
-                </p>
               </div>
             </div>
           </TabsContent>
