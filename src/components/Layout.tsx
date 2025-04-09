@@ -184,9 +184,15 @@ const LayoutContent = ({ children }: { children: React.ReactNode }) => {
       >
         <SidebarHeader className="flex items-center justify-between p-4">
           <Link to="/" className="flex items-center gap-2">
-            <div className="flex items-center">
-              <span className="text-xl font-bold text-primary truncate">Track4Health</span>
-            </div>
+            {isCollapsed ? (
+              <div className="flex items-center justify-center w-6 h-6">
+                <span className="text-xl font-bold text-primary">T</span>
+              </div>
+            ) : (
+              <div className="flex items-center max-w-[120px] pr-2">
+                <span className="text-xl font-bold text-primary truncate">Track4Health</span>
+              </div>
+            )}
           </Link>
           <div className="flex items-center gap-2">
             {isDesktop && (
@@ -202,7 +208,7 @@ const LayoutContent = ({ children }: { children: React.ReactNode }) => {
           </div>
         </SidebarHeader>
         
-        <SidebarContent>
+        <SidebarContent className="mt-2">
           <SidebarGroup>
             <SidebarGroupLabel>Navigation</SidebarGroupLabel>
             <SidebarGroupContent>
