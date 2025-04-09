@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
 import { ColorPicker } from './ColorPicker';
 import { GPSOverlay } from './GPSOverlay';
 import { Card } from '@/components/ui/card';
@@ -36,11 +35,12 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
   const [isCameraActive, setIsCameraActive] = useState(true);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [overlayPosition, setOverlayPosition] = useState({ x: 10, y: 10 });
   const [textColor, setTextColor] = useState('#ffffff');
   const [fontSize, setFontSize] = useState(16);
   const [note, setNote] = useState('');
   const [fixedOverlayPosition, setFixedOverlayPosition] = useState(true);
+  const [isDragging, setIsDragging] = useState(false);
+  const [overlayPosition, setOverlayPosition] = useState({ x: 10, y: 10 });
   const [locationData, setLocationData] = useState<CameraMetadata>({
     timestamp: new Date().toISOString(),
     location: {
@@ -95,6 +95,71 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
     }
   }, [isCameraActive]);
 
+  // Set up dragging logic
+  useEffect(() => {
+    if (!overlayRef.current || fixedOverlayPosition) return;
+    
+    const overlay = overlayRef.current;
+    
+    let startX: number, startY: number;
+    
+    const onMouseDown = (e: MouseEvent) => {
+      if (fixedOverlayPosition) return;
+      setIsDragging(true);
+      startX = e.clientX - overlayPosition.x;
+      startY = e.clientY - overlayPosition.y;
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    };
+    
+    const onTouchStart = (e: TouchEvent) => {
+      if (fixedOverlayPosition) return;
+      setIsDragging(true);
+      startX = e.touches[0].clientX - overlayPosition.x;
+      startY = e.touches[0].clientY - overlayPosition.y;
+      document.addEventListener('touchmove', onTouchMove);
+      document.addEventListener('touchend', onTouchEnd);
+    };
+    
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isDragging || fixedOverlayPosition) return;
+      const newX = Math.max(0, Math.min(e.clientX - startX, window.innerWidth - 100));
+      const newY = Math.max(0, Math.min(e.clientY - startY, window.innerHeight - 100));
+      setOverlayPosition({ x: newX, y: newY });
+    };
+    
+    const onTouchMove = (e: TouchEvent) => {
+      if (!isDragging || fixedOverlayPosition) return;
+      const newX = Math.max(0, Math.min(e.touches[0].clientX - startX, window.innerWidth - 100));
+      const newY = Math.max(0, Math.min(e.touches[0].clientY - startY, window.innerHeight - 100));
+      setOverlayPosition({ x: newX, y: newY });
+    };
+    
+    const onMouseUp = () => {
+      setIsDragging(false);
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+    
+    const onTouchEnd = () => {
+      setIsDragging(false);
+      document.removeEventListener('touchmove', onTouchMove);
+      document.removeEventListener('touchend', onTouchEnd);
+    };
+    
+    overlay.addEventListener('mousedown', onMouseDown);
+    overlay.addEventListener('touchstart', onTouchStart);
+    
+    return () => {
+      overlay.removeEventListener('mousedown', onMouseDown);
+      overlay.removeEventListener('touchstart', onTouchStart);
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('touchmove', onTouchMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      document.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [overlayRef, overlayPosition, isDragging, fixedOverlayPosition]);
+
   const updateLocation = () => {
     setIsLoading(true);
     
@@ -104,16 +169,20 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
           const { latitude, longitude, accuracy } = position.coords;
           console.log(`Got raw position: ${latitude}, ${longitude} (accuracy: ${accuracy}m)`);
           
-          // Get address using reverse geocoding
           try {
-            // Higher accuracy, no caching
+            // Use a more reliable geocoding service with cache busting and more parameters
+            const timestamp = new Date().getTime();
             const response = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1&_=${new Date().getTime()}`,
+              `https://nominatim.openstreetmap.org/reverse?` +
+              `format=json&lat=${latitude}&lon=${longitude}` +
+              `&zoom=18&addressdetails=1&_=${timestamp}` +
+              `&accept-language=en`,
               { 
                 headers: { 
                   'Accept-Language': 'en-US,en;q=0.9',
-                  'User-Agent': 'GPSCameraApp/1.0',
-                  'Cache-Control': 'no-cache, no-store, must-revalidate'
+                  'User-Agent': 'GPSCameraApp/1.0 (contact@example.com)',
+                  'Cache-Control': 'no-cache, no-store, must-revalidate',
+                  'Pragma': 'no-cache'
                 }
               }
             );
@@ -134,6 +203,7 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
               
               // Use more specific fields first
               if (addr.road) parts.push(addr.road);
+              if (addr.house_number) parts.push(addr.house_number);
               if (addr.neighbourhood) parts.push(addr.neighbourhood);
               if (addr.suburb) parts.push(addr.suburb);
               if (addr.village || addr.town || addr.city) {
@@ -323,7 +393,8 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
         left: `${overlayPosition.x}px`,
         top: `${overlayPosition.y}px`,
         right: 'auto',
-        bottom: 'auto'
+        bottom: 'auto',
+        cursor: 'move'
       };
     }
   };
@@ -366,7 +437,7 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
               className="absolute p-2 rounded bg-black/30"
               style={{
                 ...getOverlayPosition() as any,
-                touchAction: 'none',
+                touchAction: fixedOverlayPosition ? 'auto' : 'none',
                 zIndex: 5
               }}
             >

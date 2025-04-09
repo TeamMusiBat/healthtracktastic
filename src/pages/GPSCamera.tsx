@@ -49,7 +49,11 @@ const GPSCamera: React.FC = () => {
             console.error('Error getting initial location:', error);
             toast.error(`Could not get your location: ${error.message}. Please check permissions.`);
           },
-          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+          { 
+            enableHighAccuracy: true, 
+            timeout: 15000, 
+            maximumAge: 0 
+          }
         );
         
         // Set up a watcher for continuous updates with maximum accuracy
@@ -68,7 +72,7 @@ const GPSCamera: React.FC = () => {
           },
           { 
             enableHighAccuracy: true, 
-            timeout: 10000, 
+            timeout: 15000, 
             maximumAge: 0
           }
         );
@@ -121,7 +125,7 @@ const GPSCamera: React.FC = () => {
   })).filter(loc => loc.latitude !== 0 && loc.longitude !== 0);
 
   return (
-    <div className="container mx-auto max-w-7xl">
+    <div className="container mx-auto px-2 md:px-4 max-w-7xl">
       <div className="mb-6">
         <h1 className="text-3xl font-bold">GPS Camera</h1>
         <p className="text-muted-foreground">

@@ -27,7 +27,7 @@ export const GPSOverlay: React.FC<GPSOverlayProps> = ({
     : [address];
 
   return (
-    <div className="text-white" style={{ fontSize: `${fontSize}px`, color: textColor }}>
+    <div className="text-white px-2 py-1" style={{ fontSize: `${fontSize}px`, color: textColor }}>
       <p className="font-bold mb-1">
         {dateString} {timeString}
       </p>
