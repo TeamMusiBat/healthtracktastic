@@ -31,6 +31,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarInset,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Button3d } from "@/components/ui/button-3d";
 
@@ -53,6 +54,17 @@ const LayoutContent = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = useState(isMobile);
+  const { setOpen, setOpenMobile } = useSidebar();
+  
+  // Update sidebar state when mobile status changes
+  useEffect(() => {
+    if (isMobile) {
+      setIsCollapsed(true);
+      setOpenMobile(false);
+    } else {
+      setOpen(!isCollapsed);
+    }
+  }, [isMobile, isCollapsed, setOpen, setOpenMobile]);
   
   // Mouse movement detection for sidebar auto-expand/collapse - only on desktop
   useEffect(() => {
@@ -66,10 +78,12 @@ const LayoutContent = ({ children }: { children: React.ReactNode }) => {
         // If mouse is near the left edge, expand the sidebar
         if (e.clientX < 20) {
           setIsCollapsed(false);
+          setOpen(true);
         } 
         // If mouse is far from sidebar, collapse it
         else if (e.clientX > sidebarRect.right + 100) {
           setIsCollapsed(true);
+          setOpen(false);
         }
       };
       
@@ -78,12 +92,17 @@ const LayoutContent = ({ children }: { children: React.ReactNode }) => {
         document.removeEventListener('mousemove', handleMouseMovement);
       };
     }
-  }, [isMobile, isDesktop]);
+  }, [isMobile, isDesktop, setOpen]);
   
   // Set initial sidebar state based on device
   useEffect(() => {
     setIsCollapsed(isMobile);
-  }, [isMobile]);
+    if (isMobile) {
+      setOpenMobile(false);
+    } else {
+      setOpen(!isMobile);
+    }
+  }, [isMobile, setOpen, setOpenMobile]);
   
   const isActiveRoute = (path: string) => {
     return location.pathname === path;
@@ -148,6 +167,11 @@ const LayoutContent = ({ children }: { children: React.ReactNode }) => {
 
   const handleToggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
+    if (isMobile) {
+      setOpenMobile(!isCollapsed);
+    } else {
+      setOpen(isCollapsed);
+    }
   };
 
   // Main layout component with sidebar and content
@@ -157,7 +181,6 @@ const LayoutContent = ({ children }: { children: React.ReactNode }) => {
       <Sidebar 
         variant={isMobile ? "floating" : "sidebar"} 
         collapsible={isMobile ? "offcanvas" : "icon"}
-        defaultCollapsed={isMobile}
         className="transition-all duration-300 border-r shadow-md z-50"
       >
         <SidebarHeader className="flex items-center justify-between p-4">
