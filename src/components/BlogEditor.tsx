@@ -62,7 +62,7 @@ const BlogEditor = ({ onSave, onCancel, blogToEdit }: BlogEditorProps) => {
     const blogData = {
       title,
       content,
-      author: user?.name || "Asif Jamali",
+      author: user?.name || "Anonymous User",
       image: images[0] || undefined,
       date: blogToEdit ? blogToEdit.date : new Date().toISOString(),
     };
@@ -71,7 +71,7 @@ const BlogEditor = ({ onSave, onCancel, blogToEdit }: BlogEditorProps) => {
   };
   
   return (
-    <div className="space-y-4 border rounded-md p-4 bg-white">
+    <div className="space-y-4 border rounded-md p-4 bg-white mt-4">
       <h2 className="text-xl font-bold">{blogToEdit ? "Edit Blog" : "Create New Blog"}</h2>
       
       <div className="space-y-2">

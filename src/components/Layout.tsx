@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -186,7 +185,7 @@ const LayoutContent = ({ children }: { children: React.ReactNode }) => {
         <SidebarHeader className="flex items-center justify-between p-4">
           <Link to="/" className="flex items-center gap-2">
             <div className="flex items-center">
-              <span className="text-xl font-bold text-primary">Track4Health</span>
+              <span className="text-xl font-bold text-primary truncate">Track4Health</span>
             </div>
           </Link>
           <div className="flex items-center gap-2">
