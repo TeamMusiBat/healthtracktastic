@@ -51,7 +51,7 @@ const GPSCamera: React.FC = () => {
           },
           { 
             enableHighAccuracy: true, 
-            timeout: 15000, 
+            timeout: 30000, 
             maximumAge: 0 
           }
         );
@@ -72,7 +72,7 @@ const GPSCamera: React.FC = () => {
           },
           { 
             enableHighAccuracy: true, 
-            timeout: 15000, 
+            timeout: 30000, 
             maximumAge: 0
           }
         );
@@ -126,23 +126,23 @@ const GPSCamera: React.FC = () => {
 
   return (
     <div className="container mx-auto px-2 md:px-4 max-w-7xl">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">GPS Camera</h1>
+      <div className="mb-4 md:mb-6">
+        <h1 className="text-2xl md:text-3xl font-bold">GPS Camera</h1>
         <p className="text-muted-foreground">
           Take photos with location information, customize overlays, and share with ease
         </p>
       </div>
 
       <Tabs defaultValue="camera" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-8">
-          <TabsTrigger value="camera" className="py-3 text-base">
-            <Camera className="mr-2 h-5 w-5" /> Camera
+        <TabsList className="grid w-full grid-cols-3 mb-4 md:mb-8">
+          <TabsTrigger value="camera" className="py-2 md:py-3 text-sm md:text-base">
+            <Camera className="mr-2 h-4 w-4 md:h-5 md:w-5" /> Camera
           </TabsTrigger>
-          <TabsTrigger value="gallery" className="py-3 text-base">
-            <Image className="mr-2 h-5 w-5" /> Gallery
+          <TabsTrigger value="gallery" className="py-2 md:py-3 text-sm md:text-base">
+            <Image className="mr-2 h-4 w-4 md:h-5 md:w-5" /> Gallery
           </TabsTrigger>
-          <TabsTrigger value="map" className="py-3 text-base">
-            <Map className="mr-2 h-5 w-5" /> Map View
+          <TabsTrigger value="map" className="py-2 md:py-3 text-sm md:text-base">
+            <Map className="mr-2 h-4 w-4 md:h-5 md:w-5" /> Map View
           </TabsTrigger>
         </TabsList>
         

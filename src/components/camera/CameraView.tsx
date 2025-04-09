@@ -1,5 +1,5 @@
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Camera, Image, MapPin, RefreshCw, Share2, Settings, Download, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -95,113 +95,53 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
     }
   }, [isCameraActive]);
 
-  // Set up dragging logic
-  useEffect(() => {
-    if (!overlayRef.current || fixedOverlayPosition) return;
-    
-    const overlay = overlayRef.current;
-    
-    let startX: number, startY: number;
-    
-    const onMouseDown = (e: MouseEvent) => {
-      if (fixedOverlayPosition) return;
-      setIsDragging(true);
-      startX = e.clientX - overlayPosition.x;
-      startY = e.clientY - overlayPosition.y;
-      document.addEventListener('mousemove', onMouseMove);
-      document.addEventListener('mouseup', onMouseUp);
-    };
-    
-    const onTouchStart = (e: TouchEvent) => {
-      if (fixedOverlayPosition) return;
-      setIsDragging(true);
-      startX = e.touches[0].clientX - overlayPosition.x;
-      startY = e.touches[0].clientY - overlayPosition.y;
-      document.addEventListener('touchmove', onTouchMove);
-      document.addEventListener('touchend', onTouchEnd);
-    };
-    
-    const onMouseMove = (e: MouseEvent) => {
-      if (!isDragging || fixedOverlayPosition) return;
-      const newX = Math.max(0, Math.min(e.clientX - startX, window.innerWidth - 100));
-      const newY = Math.max(0, Math.min(e.clientY - startY, window.innerHeight - 100));
-      setOverlayPosition({ x: newX, y: newY });
-    };
-    
-    const onTouchMove = (e: TouchEvent) => {
-      if (!isDragging || fixedOverlayPosition) return;
-      const newX = Math.max(0, Math.min(e.touches[0].clientX - startX, window.innerWidth - 100));
-      const newY = Math.max(0, Math.min(e.touches[0].clientY - startY, window.innerHeight - 100));
-      setOverlayPosition({ x: newX, y: newY });
-    };
-    
-    const onMouseUp = () => {
-      setIsDragging(false);
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
-    };
-    
-    const onTouchEnd = () => {
-      setIsDragging(false);
-      document.removeEventListener('touchmove', onTouchMove);
-      document.removeEventListener('touchend', onTouchEnd);
-    };
-    
-    overlay.addEventListener('mousedown', onMouseDown);
-    overlay.addEventListener('touchstart', onTouchStart);
-    
-    return () => {
-      overlay.removeEventListener('mousedown', onMouseDown);
-      overlay.removeEventListener('touchstart', onTouchStart);
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('touchmove', onTouchMove);
-      document.removeEventListener('mouseup', onMouseUp);
-      document.removeEventListener('touchend', onTouchEnd);
-    };
-  }, [overlayRef, overlayPosition, isDragging, fixedOverlayPosition]);
-
-  const updateLocation = () => {
-    setIsLoading(true);
-    
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude, accuracy } = position.coords;
-          console.log(`Got raw position: ${latitude}, ${longitude} (accuracy: ${accuracy}m)`);
-          
-          try {
-            // Use a more reliable geocoding service with cache busting and more parameters
-            const timestamp = new Date().getTime();
-            const response = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?` +
-              `format=json&lat=${latitude}&lon=${longitude}` +
-              `&zoom=18&addressdetails=1&_=${timestamp}` +
-              `&accept-language=en`,
-              { 
-                headers: { 
-                  'Accept-Language': 'en-US,en;q=0.9',
-                  'User-Agent': 'GPSCameraApp/1.0 (contact@example.com)',
-                  'Cache-Control': 'no-cache, no-store, must-revalidate',
-                  'Pragma': 'no-cache'
-                }
-              }
-            );
-            
-            if (!response.ok) {
-              throw new Error(`HTTP error! Status: ${response.status}`);
+  // Fetch address from coordinates using reverse geocoding
+  const fetchAddressFromCoordinates = useCallback(async (latitude: number, longitude: number) => {
+    try {
+      console.log(`Fetching address for coordinates: ${latitude}, ${longitude}`);
+      
+      // Use multiple geocoding services for redundancy
+      const endpoints = [
+        // OpenStreetMap Nominatim
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1&accept-language=en`,
+        
+        // Google Maps Geocoding API fallback (commented out as it requires API key)
+        // `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=YOUR_API_KEY`,
+        
+        // Here Geocoder fallback (commented out as it requires API key)
+        // `https://revgeocode.search.hereapi.com/v1/revgeocode?at=${latitude},${longitude}&apiKey=YOUR_API_KEY`,
+      ];
+      
+      // Try each endpoint until one works
+      for (const endpoint of endpoints) {
+        try {
+          const response = await fetch(endpoint, {
+            headers: {
+              'User-Agent': 'GPSCameraApp/1.0',
+              'Accept-Language': 'en',
+              'Cache-Control': 'no-cache'
             }
-            
-            const data = await response.json();
-            console.log("Geocoding API response:", data);
-            
-            // Format detailed address from components
-            let address = '';
+          });
+          
+          if (!response.ok) {
+            console.log(`API ${endpoint} failed with status ${response.status}`);
+            continue; // Try next API
+          }
+          
+          const data = await response.json();
+          console.log("Geocoding API response:", data);
+          
+          // Extract address from OpenStreetMap format
+          if (endpoint.includes('nominatim')) {
+            if (data.display_name) {
+              return data.display_name;
+            }
             
             if (data.address) {
               const addr = data.address;
               const parts = [];
               
-              // Use more specific fields first
+              // Order components from most specific to most general
               if (addr.road) parts.push(addr.road);
               if (addr.house_number) parts.push(addr.house_number);
               if (addr.neighbourhood) parts.push(addr.neighbourhood);
@@ -211,31 +151,61 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
               }
               if (addr.county) parts.push(addr.county);
               if (addr.state) parts.push(addr.state);
+              if (addr.country) parts.push(addr.country);
               
-              address = parts.join(', ');
-              
-              // If no usable parts, use raw coordinates
-              if (!address) {
-                address = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
-              }
-            } else {
-              address = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+              return parts.join(', ');
             }
+          }
+          
+          // Handle other API formats if used
+        } catch (error) {
+          console.error(`Error with geocoding API ${endpoint}:`, error);
+          // Continue to next API
+        }
+      }
+      
+      // Fallback: if all APIs fail, return raw coordinates
+      return `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+      
+    } catch (error) {
+      console.error("Error fetching address:", error);
+      return `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+    }
+  }, []);
+
+  const updateLocation = async () => {
+    setIsLoading(true);
+    
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude, accuracy } = position.coords;
+          console.log(`Got position: ${latitude}, ${longitude} (accuracy: ${accuracy}m)`);
+          
+          try {
+            const address = await fetchAddressFromCoordinates(latitude, longitude);
             
-            // Get compass direction (simplified)
-            const compassDirections = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+            // Get compass direction if available
             let compass = '';
-            
             if ('DeviceOrientationEvent' in window) {
-              window.addEventListener('deviceorientation', function onOrientationChange(event) {
-                if (event.alpha !== null) {
-                  // Standard compass heading calculation
-                  const heading = event.alpha;
+              const getOrientation = (e: DeviceOrientationEvent) => {
+                if (e.alpha !== null) {
+                  const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW', 'N'];
+                  const heading = e.alpha;
                   const index = Math.round(heading / 45) % 8;
-                  compass = compassDirections[index];
+                  compass = directions[index];
+                  
+                  window.removeEventListener('deviceorientation', getOrientation);
+                  
+                  // Update state with compass data
+                  setLocationData(prevData => ({
+                    ...prevData,
+                    compass,
+                  }));
                 }
-                window.removeEventListener('deviceorientation', onOrientationChange);
-              });
+              };
+              
+              window.addEventListener('deviceorientation', getOrientation, { once: true });
             }
             
             setLocationData({
@@ -251,7 +221,8 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
             
             toast.success("Location updated successfully");
           } catch (error) {
-            console.error("Error fetching location details:", error);
+            console.error("Error processing location:", error);
+            
             setLocationData({
               timestamp: new Date().toISOString(),
               location: {
@@ -262,13 +233,29 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
               note
             });
             
-            toast.warning("Using raw coordinates only");
+            toast.warning("Using coordinates only - couldn't get address");
           }
+          
           setIsLoading(false);
         },
         (error) => {
-          console.error("Error getting location:", error);
-          toast.error(`Could not get your location: ${error.message}. Please check permissions.`);
+          console.error("Geolocation error:", error);
+          
+          let errorMsg = "Location access error";
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              errorMsg = "Location permission denied. Please enable in settings.";
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMsg = "Location information unavailable. Check GPS signal.";
+              break;
+            case error.TIMEOUT:
+              errorMsg = "Location request timed out. Try again.";
+              break;
+          }
+          
+          toast.error(errorMsg);
+          
           setLocationData({
             timestamp: new Date().toISOString(),
             location: {
@@ -278,16 +265,17 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
             },
             note
           });
+          
           setIsLoading(false);
         },
         {
           enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
+          timeout: 30000,  // Extended timeout for slower devices
+          maximumAge: 0    // Always get fresh position
         }
       );
     } else {
-      toast.error("Geolocation is not supported by this browser");
+      toast.error("Your browser doesn't support geolocation");
       setIsLoading(false);
     }
   };
@@ -318,6 +306,23 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
         // Draw the video frame to the canvas
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         
+        // Add overlay to the captured image if desired
+        // (Optional - uncomment to burn in the overlay)
+        /*
+        if (overlayRef.current) {
+          html2canvas(overlayRef.current).then(overlayCanvas => {
+            context.drawImage(
+              overlayCanvas, 
+              fixedOverlayPosition ? 10 : overlayPosition.x, 
+              fixedOverlayPosition ? (canvas.height - overlayCanvas.height - 10) : overlayPosition.y
+            );
+            setCapturedImage(canvas.toDataURL('image/jpeg'));
+          });
+        } else {
+          setCapturedImage(canvas.toDataURL('image/jpeg'));
+        }
+        */
+        
         // Get the data URL from the canvas
         const dataURL = canvas.toDataURL('image/jpeg');
         setCapturedImage(dataURL);
@@ -325,7 +330,8 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
         // Update location data to include the note
         const updatedMetadata = {
           ...locationData,
-          note: note
+          note: note,
+          timestamp: new Date().toISOString() // Use current time for the photo
         };
         
         if (onImageCapture) {
@@ -361,13 +367,17 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
         
         await navigator.share({
           title: 'GPS Photo',
-          text: 'Check out this photo with GPS location',
+          text: `Photo taken at: ${locationData.location.address}`,
           files: [file]
         });
         
         toast.success("Image shared successfully");
       } catch (error) {
         console.error("Error sharing image:", error);
+        if (error instanceof Error && error.name === 'AbortError') {
+          // User canceled share operation
+          return;
+        }
         toast.error("Failed to share image");
       }
     } else {
@@ -375,28 +385,78 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
     }
   };
 
-  // Get the overlay position based on settings
-  const getOverlayPosition = () => {
-    if (fixedOverlayPosition) {
-      // Fixed at bottom
-      return { 
-        position: 'absolute',
-        left: '10px', 
-        bottom: '70px',
-        top: 'auto',
-        right: 'auto'
-      };
-    } else {
-      // Custom position
-      return {
-        position: 'absolute',
-        left: `${overlayPosition.x}px`,
-        top: `${overlayPosition.y}px`,
-        right: 'auto',
-        bottom: 'auto',
-        cursor: 'move'
-      };
-    }
+  // Handle overlay dragging - only when not fixed position
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (fixedOverlayPosition) return;
+    
+    setIsDragging(true);
+    // Capture start position
+    const startX = e.clientX - overlayPosition.x;
+    const startY = e.clientY - overlayPosition.y;
+    
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      if (!isDragging) return;
+      
+      // Calculate new position within bounds
+      const containerRect = document.querySelector('.camera-container')?.getBoundingClientRect();
+      if (!containerRect) return;
+      
+      const maxX = containerRect.width - 150;
+      const maxY = containerRect.height - 80;
+      
+      const newX = Math.max(0, Math.min(moveEvent.clientX - startX, maxX));
+      const newY = Math.max(0, Math.min(moveEvent.clientY - startY, maxY));
+      
+      setOverlayPosition({ x: newX, y: newY });
+    };
+    
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+  
+  // Handle touch events for mobile dragging
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (fixedOverlayPosition) return;
+    
+    setIsDragging(true);
+    const touch = e.touches[0];
+    const startX = touch.clientX - overlayPosition.x;
+    const startY = touch.clientY - overlayPosition.y;
+    
+    const handleTouchMove = (moveEvent: TouchEvent) => {
+      if (!isDragging) return;
+      
+      const touch = moveEvent.touches[0];
+      // Calculate new position within bounds
+      const containerRect = document.querySelector('.camera-container')?.getBoundingClientRect();
+      if (!containerRect) return;
+      
+      const maxX = containerRect.width - 150;
+      const maxY = containerRect.height - 80;
+      
+      const newX = Math.max(0, Math.min(touch.clientX - startX, maxX));
+      const newY = Math.max(0, Math.min(touch.clientY - startY, maxY));
+      
+      setOverlayPosition({ x: newX, y: newY });
+      
+      // Prevent scrolling while dragging
+      moveEvent.preventDefault();
+    };
+    
+    const handleTouchEnd = () => {
+      setIsDragging(false);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+    
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd);
   };
 
   if (hasPermission === false) {
@@ -418,7 +478,7 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
     <div className="flex flex-col w-full max-w-4xl mx-auto">
       <Card className="relative overflow-hidden bg-gray-900 rounded-lg shadow-xl">
         {!capturedImage ? (
-          <div className="relative aspect-video w-full">
+          <div className="relative aspect-video w-full camera-container">
             {isLoading && (
               <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -434,12 +494,17 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
             
             <div
               ref={overlayRef}
-              className="absolute p-2 rounded bg-black/30"
+              className={`absolute p-2 rounded ${isDragging ? 'cursor-grabbing' : fixedOverlayPosition ? '' : 'cursor-grab'}`}
               style={{
-                ...getOverlayPosition() as any,
+                position: 'absolute',
+                left: fixedOverlayPosition ? '10px' : `${overlayPosition.x}px`,
+                top: fixedOverlayPosition ? 'auto' : `${overlayPosition.y}px`,
+                bottom: fixedOverlayPosition ? '70px' : 'auto',
                 touchAction: fixedOverlayPosition ? 'auto' : 'none',
                 zIndex: 5
               }}
+              onMouseDown={handleMouseDown}
+              onTouchStart={handleTouchStart}
             >
               <GPSOverlay 
                 locationData={locationData} 
@@ -559,7 +624,7 @@ export const CameraView: React.FC<CameraViewProps> = ({ onImageCapture }) => {
                 <div className="font-medium">Longitude:</div>
                 <div>{locationData.location.longitude?.toFixed(6) || 'Unknown'}</div>
                 <div className="font-medium">Address:</div>
-                <div>{locationData.location.address}</div>
+                <div className="break-words">{locationData.location.address}</div>
                 {locationData.compass && (
                   <>
                     <div className="font-medium">Direction:</div>

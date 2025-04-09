@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -16,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { CameraMetadata } from './CameraView';
+import { toast } from 'sonner';
 
 // Replace the PhotoMetadata with CameraMetadata from CameraView
 interface Photo {
@@ -60,15 +62,22 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({ initialPhotos = [] }
     if (selectedPhoto?.id === id) {
       setSelectedPhoto(null);
     }
+    toast.success('Photo deleted successfully');
   };
 
   const downloadPhoto = (photo: Photo) => {
     const link = document.createElement('a');
     link.href = photo.src;
-    link.download = `gps-photo-${photo.id}.jpg`;
+    
+    // Create a filename with date and location
+    const date = new Date(photo.metadata.timestamp).toISOString().split('T')[0];
+    const locationPart = photo.metadata.location.address.split(',')[0].trim().replace(/\s+/g, '-').substring(0, 20);
+    
+    link.download = `gps-photo-${date}-${locationPart}.jpg`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    toast.success('Photo downloaded successfully');
   };
 
   const sharePhoto = async (photo: Photo) => {
@@ -82,11 +91,17 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({ initialPhotos = [] }
           text: `Photo taken at: ${photo.metadata.location.address}`,
           files: [file]
         });
+        toast.success('Photo shared successfully');
       } catch (error) {
         console.error("Error sharing photo:", error);
+        if (error instanceof Error && error.name === 'AbortError') {
+          // User canceled share operation
+          return;
+        }
+        toast.error('Failed to share photo');
       }
     } else {
-      console.error("Web Share API not supported");
+      toast.error('Web Share API not supported on this device');
     }
   };
 
@@ -98,7 +113,8 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({ initialPhotos = [] }
   // Filter and sort photos
   const filteredPhotos = photos
     .filter(photo => 
-      photo.metadata.location.address.toLowerCase().includes(searchTerm.toLowerCase())
+      photo.metadata.location.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (photo.metadata.note && photo.metadata.note.toLowerCase().includes(searchTerm.toLowerCase()))
     )
     .sort((a, b) => {
       const dateA = new Date(a.metadata.timestamp).getTime();
@@ -220,6 +236,14 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({ initialPhotos = [] }
                               {photo.metadata.location.address}
                             </p>
                           </div>
+                          {photo.metadata.note && (
+                            <div>
+                              <h4 className="text-sm font-medium">Note</h4>
+                              <p className="text-sm text-muted-foreground">
+                                {photo.metadata.note}
+                              </p>
+                            </div>
+                          )}
                         </TabsContent>
                         <TabsContent value="actions" className="space-y-2">
                           <Button 

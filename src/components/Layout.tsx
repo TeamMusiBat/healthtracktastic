@@ -52,9 +52,9 @@ const LayoutContent = ({ children }: { children: React.ReactNode }) => {
   const { isDesktop } = useWindowSize();
   const location = useLocation();
   const navigate = useNavigate();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(isMobile);
   
-  // Mouse movement detection for sidebar auto-expand/collapse
+  // Mouse movement detection for sidebar auto-expand/collapse - only on desktop
   useEffect(() => {
     if (!isMobile && isDesktop) {
       const handleMouseMovement = (e: MouseEvent) => {
@@ -79,6 +79,11 @@ const LayoutContent = ({ children }: { children: React.ReactNode }) => {
       };
     }
   }, [isMobile, isDesktop]);
+  
+  // Set initial sidebar state based on device
+  useEffect(() => {
+    setIsCollapsed(isMobile);
+  }, [isMobile]);
   
   const isActiveRoute = (path: string) => {
     return location.pathname === path;
@@ -152,7 +157,8 @@ const LayoutContent = ({ children }: { children: React.ReactNode }) => {
       <Sidebar 
         variant={isMobile ? "floating" : "sidebar"} 
         collapsible={isMobile ? "offcanvas" : "icon"}
-        className="transition-all duration-300 border-r shadow-md"
+        defaultCollapsed={isMobile}
+        className="transition-all duration-300 border-r shadow-md z-50"
       >
         <SidebarHeader className="flex items-center justify-between p-4">
           <Link to="/" className="flex items-center gap-2">
@@ -234,10 +240,10 @@ const LayoutContent = ({ children }: { children: React.ReactNode }) => {
       </Sidebar>
       
       {/* Main Content Area */}
-      <SidebarInset className="p-0 flex flex-col bg-gray-50 overflow-auto">
+      <SidebarInset className="p-0 flex flex-col bg-gray-50 overflow-auto w-full">
         <div className="sticky top-0 flex h-16 items-center gap-4 border-b bg-white px-4 md:px-6 shadow-sm z-10">
           {isMobile && (
-            <SidebarTrigger>
+            <SidebarTrigger className="z-50">
               <Menu className="h-5 w-5" />
             </SidebarTrigger>
           )}
@@ -247,7 +253,7 @@ const LayoutContent = ({ children }: { children: React.ReactNode }) => {
             </h1>
           </div>
         </div>
-        <div className="flex-1 p-4 md:p-6 lg:p-8">
+        <div className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
           {children}
         </div>
       </SidebarInset>
@@ -258,7 +264,7 @@ const LayoutContent = ({ children }: { children: React.ReactNode }) => {
 // Wrap the layout content with SidebarProvider
 const Layout = ({ children }: { children: React.ReactNode }) => {
   return (
-    <SidebarProvider defaultOpen={true}>
+    <SidebarProvider defaultOpen={false}>
       <LayoutContent>{children}</LayoutContent>
     </SidebarProvider>
   );
